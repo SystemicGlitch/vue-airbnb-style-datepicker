@@ -11,7 +11,7 @@ Highlights
 
 New in this fork
 - Backwards range selection (second click earlier than the first swaps start/end)
-- Optional `theme` prop for opt‑in dark mode per instance (`'dark' | 'light'`)
+- Theming via `theme` prop: `'light' | 'dark' | 'auto'` (default `'auto'` follows Quasar's `q-dark` live)
 
 Credit: All core logic and styles are based on the original work by Mikael Edebro (MIT). This fork focuses on compatibility, build, and small UX fixes.
 
@@ -127,21 +127,33 @@ export default {
 </script>
 ```
 
-### Dark theme (opt‑in, per instance)
+### Theming: light, dark, auto
 
-This fork exposes a minimal theming API that follows Vue 3 best practices without custom color props. Pass `theme="dark"` to switch a single instance to a dark palette; other instances remain light.
+This fork provides a simple theming API driven by CSS variables and a `theme` prop.
+
+- `auto` (default): Follows Quasar’s global dark mode by observing `.q-dark` on `html`/`body` and updates live without remounts.
+- `dark`: Forces the dark palette for that instance.
+- `light`: Forces the light palette for that instance.
+
+Examples
 
 ```vue
 <template>
-	<!-- Light (default) -->
-	<airbnb-style-datepicker :trigger-element-id="'light-trigger'" />
+	<!-- Auto (default) – follows Quasar q-dark live -->
+	<airbnb-style-datepicker :trigger-element-id="'auto-trigger'" />
 
-	<!-- Dark instance -->
+	<!-- Explicit auto (equivalent to default) -->
+	<airbnb-style-datepicker :trigger-element-id="'auto2-trigger'" :theme="'auto'" />
+
+	<!-- Force dark -->
 	<airbnb-style-datepicker :trigger-element-id="'dark-trigger'" :theme="'dark'" />
+
+	<!-- Force light -->
+	<airbnb-style-datepicker :trigger-element-id="'light-trigger'" :theme="'light'" />
 </template>
 ```
 
-Under the hood the component uses CSS variables scoped to the wrapper element. If you want to fine‑tune colors, override the variables in your global CSS:
+Under the hood the component sets `data-theme` on its wrapper and uses CSS variables for colors. To fine‑tune colors, override the variables in your global CSS:
 
 ```css
 /* Optional: tweak dark palette */
@@ -164,6 +176,7 @@ Notes
 - `trigger-element-id` must match an element that exists when the component mounts.
 - In programmatic scenarios, keep your boolean in sync via `@opened`/`@closed`.
 - When `inline` is `true`, the picker is always visible (outside-click close is disabled by design).
+- With Quasar, `theme="auto"` follows `q-dark` instantly; no remounts or manual syncing needed. If your app uses a different global dark class, you can control per‑instance explicitly via `theme`.
 
 ---
 
@@ -230,5 +243,5 @@ Changelog (high level)
 - Vue 3 compatibility and Vite builds
 - Programmatic toggle fixes and outside‑click close on Vue 3
 - Range selection improvements (backwards selection; fresh start after full range when action buttons are shown)
-- Opt‑in dark theme via `theme="dark"` + CSS variables
+- Theming API: `theme = 'light' | 'dark' | 'auto'` (default `'auto'` follows Quasar `q-dark` live) + CSS variables
 
