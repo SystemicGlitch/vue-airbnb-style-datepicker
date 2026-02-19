@@ -131,7 +131,7 @@ export default {
 
 This fork provides a simple theming API driven by CSS variables and a `theme` prop.
 
-- `auto` (default): Follows Quasar’s global dark mode by observing `.q-dark` on `html`/`body` and updates live without remounts.
+- `auto` (default): Follows Quasar’s global dark mode by observing `.q-dark` or `.body--dark` on `html`/`body` and updates live without remounts.
 - `dark`: Forces the dark palette for that instance.
 - `light`: Forces the light palette for that instance.
 
@@ -176,7 +176,7 @@ Notes
 - `trigger-element-id` must match an element that exists when the component mounts.
 - In programmatic scenarios, keep your boolean in sync via `@opened`/`@closed`.
 - When `inline` is `true`, the picker is always visible (outside-click close is disabled by design).
-- With Quasar, `theme="auto"` follows `q-dark` instantly; no remounts or manual syncing needed. If your app uses a different global dark class, you can control per‑instance explicitly via `theme`.
+- With Quasar, `theme="auto"` follows `q-dark` (v2+) or `body--dark` (v1) instantly; no remounts or manual syncing needed. If your app uses a different global dark class, you can control per‑instance explicitly via `theme`.
 
 ---
 

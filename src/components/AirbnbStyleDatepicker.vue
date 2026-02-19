@@ -477,9 +477,11 @@ export default {
       this._applyTheme()
       if (this.theme === 'auto' && !this._darkMo) {
         try {
-          const target = document.body || document.documentElement
+          const body = document.body
+          const html = document.documentElement
           this._darkMo = new MutationObserver(() => this._applyTheme())
-          this._darkMo.observe(target, { attributes: true, attributeFilter: ['class'] })
+          if (body) this._darkMo.observe(body, { attributes: true, attributeFilter: ['class'] })
+          if (html) this._darkMo.observe(html, { attributes: true, attributeFilter: ['class'] })
         } catch (e) {}
       } else if (this.theme !== 'auto' && this._darkMo) {
         try { this._darkMo.disconnect() } catch (e) {}
@@ -544,9 +546,11 @@ export default {
     this._applyTheme()
     if (this.theme === 'auto') {
       try {
-        const target = document.body || document.documentElement
+        const body = document.body
+        const html = document.documentElement
         this._darkMo = new MutationObserver(() => this._applyTheme())
-        this._darkMo.observe(target, { attributes: true, attributeFilter: ['class'] })
+        if (body) this._darkMo.observe(body, { attributes: true, attributeFilter: ['class'] })
+        if (html) this._darkMo.observe(html, { attributes: true, attributeFilter: ['class'] })
       } catch (e) {
         // ignore
       }
@@ -611,8 +615,10 @@ export default {
   methods: {
     _detectQuasarDark() {
       try {
-        const el = document.body || document.documentElement
-        return !!(el && el.classList && el.classList.contains('q-dark'))
+        const body = document.body
+        const html = document.documentElement
+        const hasDark = el => !!(el && el.classList && (el.classList.contains('q-dark') || el.classList.contains('body--dark')))
+        return hasDark(body) || hasDark(html)
       } catch (e) {
         return false
       }
