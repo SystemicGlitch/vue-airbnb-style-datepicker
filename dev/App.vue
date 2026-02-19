@@ -119,7 +119,7 @@
             Months to show:
             <input type="number" v-model.number="inlineMonthsToShow" min="1" max="6" style="width:70px; margin-left:6px;" />
           </label>
-          <label>
+          <label v-if="!demoAutoFitInline">
             Month width: <input type="range" min="260" max="360" step="2" v-model.number="demoMonthWidth" style="vertical-align: middle; margin: 0 8px;" />
             <span>{{ demoMonthWidth }}px</span>
           </label>

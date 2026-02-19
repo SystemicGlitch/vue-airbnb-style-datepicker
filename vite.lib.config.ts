@@ -4,6 +4,14 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [vue()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        quietDeps: true,
+        silenceDeprecations: ['legacy-js-api'],
+      },
+    },
+  },
   build: {
     lib: {
       entry: path.resolve(__dirname, 'src/index.js'),
