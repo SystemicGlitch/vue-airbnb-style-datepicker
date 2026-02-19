@@ -12,11 +12,19 @@
         </select>
       </label>
     </div>
+    <div class="buttons responsive-controls">
+      <label>
+        Demo container width:
+        <input type="range" min="280" max="1000" v-model.number="demoContainerWidth" style="margin: 0 8px; vertical-align: middle;" />
+        <span>{{ demoContainerWidth }}px</span>
+      </label>
+    </div>
     <div class="buttons">
       <button @click="toggleDatepickers">Hide datepickers</button>
       <button @click="toggleAlign">Toggle alignment</button>
       <button @click="toggleTrigger">Toggle trigger</button>
     </div>
+    <div class="demo-wrap" :style="{'--demo-max-width': demoContainerWidth + 'px'}">
     <div v-if="showDatepickers">
 
       <div class="datepicker-container with-input">
@@ -106,10 +114,17 @@
 
       <div class="datepicker-container inline-with-input">
         <h3>Inline datepicker with input</h3>
-        <div class="controls" style="margin: 8px 0 12px;">
+        <div class="controls" style="margin: 8px 0 12px; display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center;">
           <label>
             Months to show:
             <input type="number" v-model.number="inlineMonthsToShow" min="1" max="6" style="width:70px; margin-left:6px;" />
+          </label>
+          <label>
+            Month width: <input type="range" min="260" max="360" step="2" v-model.number="demoMonthWidth" style="vertical-align: middle; margin: 0 8px;" />
+            <span>{{ demoMonthWidth }}px</span>
+          </label>
+          <label>
+            <input type="checkbox" v-model="demoAutoFitInline" /> Auto-fit inline (flex months)
           </label>
         </div>
         <input
@@ -125,6 +140,8 @@
           :fullscreen-mobile="false"
           :date-one="inlineDateOne"
           :months-to-show="inlineMonthsToShow"
+          :month-width="demoMonthWidth"
+          :auto-fit-inline="demoAutoFitInline"
 
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
@@ -151,6 +168,8 @@
           :inline="true"
           :date-one="withDisabledDatesDateOne"
           :months-to-show="2"
+          :month-width="demoMonthWidth"
+          :auto-fit-inline="demoAutoFitInline"
 
           :disabled-dates="disabledDates"
           :theme="demoTheme"
@@ -224,6 +243,7 @@
         />
       </div>
     </div>
+    </div> <!-- .demo-wrap -->
   </div>
 </template>
 
@@ -272,6 +292,9 @@ export default {
         }
       ],
       // demo-only flags
+      demoContainerWidth: 600,
+      demoMonthWidth: 300,
+      demoAutoFitInline: true,
     }
   },
   computed: {
@@ -444,8 +467,54 @@ input {
 //   }
 // }
 .buttons {
-  max-width: 500px;
-  margin: 0 auto 30px;
+  max-width: 800px;
+  margin: 0 auto 20px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  > * {
+    margin: 0 !important;
+  }
+}
+
+.demo-wrap {
+  /* used to pass a CSS var for container max width */
+}
+
+.datepicker-container {
+  padding: 0 20px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.01);
+  max-width: min(100%, var(--demo-max-width, 600px));
+  width: 100%;
+  /* Ensure the center column (demo block) doesn't get too narrow on larger screens */
+  min-width: 520px;
+  margin: 0 auto 20px;
+  border-radius: 12px;
+}
+
+/* Make inputs and controls friendlier on small screens */
+@media (max-width: 640px) {
+  body { padding: 10px 8px; }
+  .datepicker-container {
+    padding: 0 12px 12px;
+    min-width: 0; /* allow full fluid behavior on small screens */
+  }
+  .buttons { gap: 8px 10px; }
+  .buttons select,
+  .buttons input[type='checkbox'] { transform: scale(1.0); }
+  #datepicker-button-trigger,
+  #datepicker-button-dark-trigger { width: 100%; min-width: 0; }
+  .with-input input[type='text'] { width: 100%; box-sizing: border-box; }
+}
+
+/* Make the datepicker header's center area a bit wider in the demo so month names don't crowd */
+@media (min-width: 768px) {
+  .asd__datepicker-header {
+    padding: 0 96px; /* default was 72px in component; give more room between nav buttons */
+  }
 }
 </style>

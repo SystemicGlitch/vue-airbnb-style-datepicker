@@ -48,7 +48,7 @@
       </div>
 
       <div class="asd__inner-wrapper" :style="innerStyles">
-        <transition-group name="asd__list-complete" tag="div">
+        <transition-group name="asd__list-complete" tag="div" class="asd__months-wrapper">
           <div
             v-for="(month, monthIndex) in months"
             :key="month.firstDateOfMonth"
@@ -290,6 +290,11 @@ export default {
     showShortcutsMenuTrigger: { type: Boolean, default: true },
     showMonthYearSelect: { type: Boolean, default: false },
     yearsForSelect: { type: Number, default: 10 },
+    // When inline, allow months to flex to fill available space before wrapping
+    // If false, each month keeps a fixed width and never stretches
+    autoFitInline: { type: Boolean, default: true },
+    // Optional: base width per month (px). If omitted, defaults to 300.
+    monthWidth: { type: Number },
     isTest: {
       type: Boolean,
       // Avoid relying on webpack-style process.env; use Vite's import.meta.env when available
@@ -418,6 +423,11 @@ export default {
     }
   },
   computed: {
+    monthWidthNum() {
+      return typeof this.monthWidth === 'number' && !isNaN(this.monthWidth)
+        ? this.monthWidth
+        : this.width
+    },
     dataTheme() {
       return this.isDark ? 'dark' : null
     },
@@ -426,6 +436,7 @@ export default {
         'asd__wrapper--datepicker-open': this.showDatepicker,
         'asd__wrapper--full-screen': this.showFullscreen,
         'asd__wrapper--inline': this.inline,
+        'asd__wrapper--auto-fit': this.inline && this.autoFitInline,
       }
     },
     wrapperStyles() {
@@ -438,23 +449,30 @@ export default {
         right: this.alignRight
           ? this.triggerWrapperPosition.right - this.triggerPosition.right + this.offsetX + 'px'
           : '',
-        width: this.width * this.showMonths + 'px',
+        // In inline mode, allow the wrapper to be as wide as its container so months can wrap
+        width: this.inline ? 'auto' : this.monthWidthNum * this.showMonths + 'px',
+        // Expose month min width for CSS (used by auto-fit flex sizing)
+        '--asd-month-min': this.monthWidthNum + 'px',
         zIndex: this.inline ? '0' : '100',
       }
     },
     innerStyles() {
       return {
-        'margin-left': this.showFullscreen ? '-' + this.viewportWidth : `-${this.width}px`,
+        // When inline, don't offset for the hidden month; we hide it entirely via CSS to enable wrapping
+        'margin-left': this.inline ? '0' : (this.showFullscreen ? '-' + this.viewportWidth : `-${this.monthWidthNum}px`),
       }
     },
     keyboardShortcutsMenuStyles() {
       return {
-        left: this.showFullscreen ? this.viewportWidth : `${this.width}px`,
+        left: this.showFullscreen ? this.viewportWidth : `${this.monthWidthNum}px`,
       }
     },
     monthWidthStyles() {
       return {
-        width: this.showFullscreen ? this.viewportWidth : this.width + 'px',
+        // Respect the calendar month width in all modes; inline will still wrap via flex container
+        width: this.inline
+          ? (this.autoFitInline ? 'auto' : (this.monthWidthNum + 'px'))
+          : (this.showFullscreen ? this.viewportWidth : this.monthWidthNum + 'px'),
       }
     },
     mobileHeaderFallback() {
@@ -487,7 +505,7 @@ export default {
       return this.mode === 'single'
     },
     datepickerWidth() {
-      return this.width * this.showMonths
+      return this.monthWidthNum * this.showMonths
     },
     datePropsCompound() {
       // used to watch for changes in props, and update GUI accordingly
@@ -683,9 +701,11 @@ export default {
     },
     getDayStyles(date) {
       // Keep width inline; colors and borders are now driven by CSS variables and state classes
-      return {
-        width: (this.width - 30) / 7 + 'px',
+      if (this.inline && this.autoFitInline) {
+        // Let CSS handle sizing in auto-fit inline mode
+        return {}
       }
+      return { width: (this.monthWidthNum - 30) / 7 + 'px' }
     },
     getAriaLabelForDate(date) {
       const dateLabel = format(date, this.dateLabelFormat)
@@ -1322,6 +1342,59 @@ $border: 1px solid var(--asd-day-border);
     transition: all $transition-time ease;
     position: relative;
   }
+  /* Inline mode: let months wrap based on container width */
+  &__wrapper--inline {
+    /* Allow normal wrapping semantics inside inline wrapper */
+    white-space: normal;
+    /* In inline mode, lay out the months in a flex row that wraps only when needed */
+    .asd__inner-wrapper {
+      margin-left: 0; /* ensure no offset in inline mode */
+    }
+    .asd__months-wrapper {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 12px 16px; /* compact spacing between months */
+    }
+    .asd__month {
+      display: block; /* flex item; width comes from inline style (monthWidthStyles) */
+      /* Do not stretch months; preserve month size and wrap only when necessary */
+      flex: 0 0 auto;
+    }
+    .asd__month--hidden {
+      display: none !important; /* don't reserve space for transition buffers */
+      visibility: hidden;
+      height: 0;
+      padding: 0;
+      margin: 0;
+    }
+    /* Make the keyboard shortcuts panel overlay on top of the calendar instead of reserving right-side area */
+    .asd__keyboard-shortcuts-menu {
+      left: 0 !important;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: 20px; /* keep some breathing room around the overlay */
+    }
+  }
+
+  /* Auto-fit variant: months can grow to fill available row space before wrapping */
+  &__wrapper--inline.asd__wrapper--auto-fit {
+    .asd__months-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 12px 16px;
+    }
+    .asd__month {
+      flex: 1 1 var(--asd-month-min);
+      min-width: var(--asd-month-min);
+      max-width: 100%;
+    }
+  }
   &__datepicker-header {
     position: relative;
     /* keep header content away from the left/right month nav buttons */
@@ -1370,7 +1443,7 @@ $border: 1px solid var(--asd-day-border);
     top: 0px;
     bottom: 0px;
     right: 0px;
-    z-index: 10;
+    z-index: 200; /* above month nav arrows (z-index: 30) */
     overflow: auto;
     background: rgb(255, 255, 255);
     border-width: 1px;
@@ -1473,7 +1546,7 @@ $border: 1px solid var(--asd-day-border);
 
   &__month {
     transition: all $transition-time ease;
-    display: inline-block;
+    display: inline-block; /* default (popup) uses inline-block; inline mode overrides to flex item */
     padding: 15px;
 
     &--hidden {

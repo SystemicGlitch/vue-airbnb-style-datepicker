@@ -12,6 +12,7 @@ Highlights
 New in this fork
 - Backwards range selection (second click earlier than the first swaps start/end)
 - Theming via `theme` prop: `'light' | 'dark' | 'auto'` (default `'auto'` follows Quasar's `q-dark` live)
+- New inline layout controls: `monthWidth` (px) and `autoFitInline` (default: `true`) to keep months aligned and optionally flex to fit the container before wrapping
 
 Credit: All core logic and styles are based on the original work by Mikael Edebro (MIT). This fork focuses on compatibility, build, and small UX fixes.
 
@@ -128,6 +129,35 @@ export default {
 </script>
 ```
 
+### Inline layout and sizing (new)
+
+This fork adds two props to control inline layout and sizing:
+
+- `monthWidth?: number` – Base width (in px) of a single month. Default is 300.
+- `autoFitInline?: boolean` – When `true` (default), months can grow to fill the row before wrapping. When `false`, months keep their fixed `monthWidth` and wrap only when there isn’t room.
+
+Examples:
+
+```vue
+<!-- Auto-fit (default): months expand a bit to pack the row, then wrap when needed -->
+<airbnb-style-datepicker
+	:inline="true"
+	:months-to-show="2"
+	:month-width="300"
+	:auto-fit-inline="true"  />
+
+<!-- Fixed width: never stretch months; wrap only when container can't fit another -->
+<airbnb-style-datepicker
+	:inline="true"
+	:months-to-show="3"
+	:month-width="320"
+	:auto-fit-inline="false" />
+```
+
+Tips
+- Wrapping is handled by the inline months container; no right-side help column is reserved anymore. The help/shortcuts panel overlays on top of the calendar when opened.
+- If your container is just a few pixels short, reduce `monthWidth` slightly (e.g., 300 → 292) or keep `autoFitInline` enabled so months can flex to fit.
+
 ### Theming: light, dark, auto
 
 This fork provides a simple theming API driven by CSS variables and a `theme` prop.
@@ -177,6 +207,7 @@ Notes
 - `trigger-element-id` must match an element that exists when the component mounts.
 - In programmatic scenarios, keep your boolean in sync via `@opened`/`@closed`.
 - When `inline` is `true`, the picker is always visible (outside-click close is disabled by design).
+- Keyboard shortcuts/help panel: click the `?` chevron to open. The panel overlays above the calendar (higher z-index than the month nav arrows).
 - With Quasar, `theme="auto"` follows `q-dark` (v2+) or `body--dark` (v1) instantly; no remounts or manual syncing needed. If your app uses a different global dark class, you can control per‑instance explicitly via `theme`.
 
 ---
