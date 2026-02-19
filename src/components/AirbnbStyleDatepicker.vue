@@ -1673,6 +1673,12 @@ $border: 1px solid var(--asd-day-border);
       color: var(--asd-selected-text) !important;
       border: 1px double var(--asd-in-range-border) !important;
     }
+    /* Make today's number bold regardless of position */
+    &--today {
+      .asd__day-button {
+        font-weight: 700;
+      }
+    }
   }
   &__day-button {
     background: transparent;
@@ -1696,6 +1702,14 @@ $border: 1px solid var(--asd-day-border);
   &__daypos--top-right { align-items: flex-start; justify-content: flex-end; }
   &__daypos--bottom-left { align-items: flex-end; justify-content: flex-start; }
   &__daypos--bottom-right { align-items: flex-end; justify-content: flex-end; }
+
+  /* Slightly smaller type when pinned to a corner */
+  &__daypos--top-left,
+  &__daypos--top-right,
+  &__daypos--bottom-left,
+  &__daypos--bottom-right {
+    font-size: 12px;
+  }
 
   &__action-buttons {
     min-height: 50px;
