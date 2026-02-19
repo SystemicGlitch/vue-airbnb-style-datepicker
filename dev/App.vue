@@ -43,6 +43,7 @@
             :show-action-buttons="true"
             :show-month-year-select="true"
             :theme="demoTheme"
+            :key="selectedLocale"
             @date-one-selected="val => { inputDateOne = val }"
             @date-two-selected="val => { inputDateTwo = val }"
           />
@@ -66,6 +67,7 @@
             :date-two="inputSingleDateTwo"
 
             :theme="demoTheme"
+            :key="selectedLocale"
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
@@ -92,6 +94,7 @@
             :offset-y="10"
             :close-after-select="true"
             :theme="demoTheme"
+            :key="selectedLocale"
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
@@ -129,6 +132,7 @@
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort"
+          :key="selectedLocale"
           @date-one-selected="val => { inlineDateOne = val }"
         />
       </div>
@@ -153,6 +157,7 @@
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort"
+          :key="selectedLocale"
           @date-one-selected="val => { withDisabledDatesDateOne = val }"
         />
       </div>
@@ -175,6 +180,7 @@
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
+            :key="selectedLocale"
             @date-one-selected="onDateOneSelected"
             @date-two-selected="onDateTwoSelected"
             @apply="applyMethod"
@@ -212,6 +218,7 @@
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort"
+          :key="selectedLocale"
           @date-one-selected="val => { darkDateOne = val }"
           @date-two-selected="val => { darkDateTwo = val }"
         />

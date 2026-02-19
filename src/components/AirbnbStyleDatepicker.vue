@@ -44,14 +44,7 @@
           </button>
         </div>
 
-        <div
-          class="asd__days-legend"
-          v-for="(month, index) in showMonths"
-          :key="month"
-          :style="[monthWidthStyles, {left: (width * index) + 'px'}]"
-        >
-          <div class="asd__day-title" v-for="(day, index) in daysShort" :key="index">{{ day }}</div>
-        </div>
+        <!-- Day-name legends are rendered per-month below the month name to ensure correct alignment in all modes -->
       </div>
 
       <div class="asd__inner-wrapper" :style="innerStyles">
@@ -106,6 +99,16 @@
             </div>
 
             <table class="asd__month-table" role="presentation">
+              <!-- Day-name legend immediately above the grid (visible for both popup and inline) -->
+              <thead>
+                <tr>
+                  <th colspan="7" style="padding:6px 0 0; background:transparent; border:none;">
+                    <div class="asd__days-legend asd__days-legend--inline" style="display:flex; justify-content:space-between;">
+                      <div class="asd__day-title" v-for="(day, index) in daysShort" :key="index" style="flex:1; text-align:center">{{ day }}</div>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
               <tbody>
                 <tr class="asd__week" v-for="(week, index) in month.weeks" :key="index">
                   <td
@@ -510,6 +513,18 @@ export default {
       // Recompute responsive month count and regenerate months when prop changes
       this.positionDatepicker()
       this.generateMonths()
+    },
+    monthNamesOverride(newVal) {
+      // Re-apply localization overrides when parent changes them
+      this.setupDatepicker()
+      this.generateMonths()
+      this.generateYears()
+    },
+    daysOverride(newVal) {
+      this.setupDatepicker()
+    },
+    daysShortOverride(newVal) {
+      this.setupDatepicker()
     },
     theme() {
       this._applyTheme()
@@ -1424,10 +1439,11 @@ $border: 1px solid var(--asd-day-border);
   }
 
   &__days-legend {
-    position: absolute;
-    top: 50px;
-    left: 10px;
-    padding: 0 10px;
+    /* Ensure the weekday legend is visible in both popup and inline modes */
+    position: relative;
+    top: auto;
+    left: auto;
+    padding: 6px 10px 0;
   }
   &__day-title {
     display: inline-block;
@@ -1438,6 +1454,13 @@ $border: 1px solid var(--asd-day-border);
     opacity: 0.7;
     font-size: 0.8em;
     margin-left: -1px;
+  }
+
+  /* Inline mode: keep day legends in the normal flow above months so they remain visible */
+  &__wrapper--inline {
+    .asd__days-legend {
+      /* No special handling now that default uses relative positioning */
+    }
   }
 
   &__month-table {
