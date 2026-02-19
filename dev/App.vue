@@ -2,6 +2,11 @@
   <div class="app" :class="{'align-right': alignRight}">
     <h1>Examples</h1>
     <div class="buttons">
+      <label style="margin-right:12px;">
+        <input type="checkbox" v-model="useDark" /> Dark mode
+      </label>
+    </div>
+    <div class="buttons">
       <button @click="toggleDatepickers">Hide datepickers</button>
       <button @click="toggleAlign">Toggle alignment</button>
       <button @click="toggleTrigger">Toggle trigger</button>
@@ -27,6 +32,7 @@
             :months-to-show="2"
             :show-action-buttons="true"
             :show-month-year-select="true"
+            :theme="demoTheme"
             @date-one-selected="val => { inputDateOne = val }"
             @date-two-selected="val => { inputDateTwo = val }"
           />
@@ -48,6 +54,7 @@
             :mode="'single'"
             :date-one="inputSingleDateOne"
             :date-two="inputSingleDateTwo"
+            :theme="demoTheme"
             @date-one-selected="val => { inputSingleDateOne = val }"
           />
         </div>
@@ -64,11 +71,12 @@
             :date-one="buttonDateOne"
             :date-two="buttonDateTwo"
             :min-date="'2018-04-18'"
-            :fullscreen-mobile="true"
+            :fullscreen-mobile="false"
             :months-to-show="2"
             :trigger="trigger"
             :offset-y="10"
             :close-after-select="true"
+            :theme="demoTheme"
             @date-one-selected="val => { buttonDateOne = val }"
             @date-two-selected="val => { buttonDateTwo = val; trigger = false }"
           />
@@ -92,6 +100,7 @@
           :months-to-show="2"
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
+          :theme="demoTheme"
           @date-one-selected="val => { inlineDateOne = val }"
         />
       </div>
@@ -111,6 +120,7 @@
           :date-one="withDisabledDatesDateOne"
           :months-to-show="2"
           :disabled-dates="disabledDates"
+          :theme="demoTheme"
           @date-one-selected="val => { withDisabledDatesDateOne = val }"
         />
       </div>
@@ -125,9 +135,10 @@
             :mode="'range'"
             :date-one="callbackDateOne"
             :date-two="callbackDateTwo"
-            :fullscreen-mobile="true"
+            :fullscreen-mobile="false"
             :months-to-show="2"
             :offset-y="10"
+            :theme="demoTheme"
             @date-one-selected="onDateOneSelected"
             @date-two-selected="onDateTwoSelected"
             @apply="applyMethod"
@@ -148,7 +159,7 @@
     </div>
 
     <div class="datepicker-container with-button">
-      <h3>Range datepicker (Dark theme)</h3>
+      <h3>Range datepicker ({{ demoThemeLabel }})</h3>
       <div class="datepicker-trigger">
         <button id="datepicker-button-dark-trigger">{{ formatDates(darkDateOne, darkDateTwo) || 'Select dates' }}</button>
 
@@ -159,7 +170,7 @@
           :date-two="darkDateTwo"
           :months-to-show="2"
           :offset-y="10"
-          :theme="'dark'"
+          :theme="demoTheme"
           :close-after-select="true"
           @date-one-selected="val => { darkDateOne = val }"
           @date-two-selected="val => { darkDateTwo = val }"
@@ -193,9 +204,16 @@ export default {
       showDatepickers: true,
       trigger: false,
       eventLog: [],
+      useDark: false,
     }
   },
   computed: {
+    demoTheme() {
+      return this.useDark ? 'dark' : undefined
+    },
+    demoThemeLabel() {
+      return this.useDark ? 'Dark theme' : 'Light theme'
+    },
     disabledDates() {
       // Disable a few dates within the two months currently shown (current & next month)
       const now = new Date()
