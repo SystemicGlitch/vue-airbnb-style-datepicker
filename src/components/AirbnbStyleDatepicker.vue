@@ -885,28 +885,43 @@ export default {
         return
       }
 
-      if (this.isSelectingDate1 || isBefore(date, this.selectedDate1)) {
+      // If a full range is already selected and the picker remains open
+      // (e.g., action buttons are shown and closeAfterSelect is false),
+      // treat the next click as starting a new range from the clicked date.
+      if (this.allDatesSelected && this.showActionButtons && !this.closeAfterSelect) {
         this.selectedDate1 = date
+        this.selectedDate2 = ''
         this.isSelectingDate1 = false
+        return
+      }
 
-        if (isBefore(this.selectedDate2, date)) {
-          this.selectedDate2 = ''
-        }
+      // First click: selecting start
+      if (this.isSelectingDate1) {
+        this.selectedDate1 = date
+        this.selectedDate2 = ''
+        this.isSelectingDate1 = false
+        return
+      }
+
+      // Second click: selecting end (supports backwards selection and same-day)
+      const start = this.selectedDate1
+      const endCandidate = date
+      if (isBefore(endCandidate, start)) {
+        // backwards: swap
+        this.selectedDate1 = endCandidate
+        this.selectedDate2 = start
       } else {
-        this.selectedDate2 = date
-        this.isSelectingDate1 = true
+        // forward or same-day
+        this.selectedDate2 = endCandidate
+      }
+      this.isSelectingDate1 = true
 
-        if (isAfter(this.selectedDate1, date)) {
-          this.selectedDate1 = ''
-        } else if (this.showActionButtons) {
-          // if user has selected both dates, focus the apply button for accessibility
-          const applyBtn = this.$refs && this.$refs['apply-button']
-          if (applyBtn && typeof applyBtn.focus === 'function') applyBtn.focus()
-        }
-
-        if (this.allDatesSelected && this.closeAfterSelect) {
-          this.closeDatepicker()
-        }
+      if (this.showActionButtons) {
+        const applyBtn = this.$refs && this.$refs['apply-button']
+        if (applyBtn && typeof applyBtn.focus === 'function') applyBtn.focus()
+      }
+      if (this.allDatesSelected && this.closeAfterSelect) {
+        this.closeDatepicker()
       }
     },
     setHoverDate(date) {

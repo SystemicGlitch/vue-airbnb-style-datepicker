@@ -128,8 +128,8 @@
             :fullscreen-mobile="true"
             :months-to-show="2"
             :offset-y="10"
-            @date-one-selected="val => { callbackDateOne = val }"
-            @date-two-selected="val => { callbackDateTwo = val }"
+            @date-one-selected="onDateOneSelected"
+            @date-two-selected="onDateTwoSelected"
             @apply="applyMethod"
             @closed="closedMethod"
             @cancelled="cancelledMethod"
@@ -137,6 +137,12 @@
             @previous-month="changeMonthMethod"
             @next-month="changeMonthMethod"
           />
+          <div class="event-log" v-if="eventLog.length">
+            <h4>Event log</h4>
+            <ul>
+              <li v-for="(e, i) in eventLog" :key="i">{{ e }}</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -164,18 +170,42 @@ export default {
       alignRight: false,
       showDatepickers: true,
       trigger: false,
+      eventLog: [],
     }
   },
   computed: {
     disabledDates() {
-      return ['2018-12-30', '2018-12-10', '2018-12-14']
+      // Disable a few dates within the two months currently shown (current & next month)
+      const now = new Date()
+      const y = now.getFullYear()
+      const m = now.getMonth()
+      const fmt = d => format(d, 'YYYY-MM-DD')
+
+      const month1Days = [5, 12, 20]
+      const month2Days = [3, 15, 27]
+
+      const inMonth = (year, month, days) =>
+        days
+          .map(day => new Date(year, month, day))
+          .filter(d => d.getMonth() === month) // guard invalid dates
+          .map(fmt)
+
+      const month1 = inMonth(y, m, month1Days)
+      const month2 = inMonth(y, (m + 1) % 12, month2Days.map(d => d))
+
+      // If next month wrapped year, adjust year
+      if (m === 11) {
+        // December -> January
+        const nextYear = y + 1
+        const jan = month2Days
+          .map(day => new Date(nextYear, 0, day))
+          .filter(d => d.getMonth() === 0)
+          .map(fmt)
+        return [...month1, ...jan]
+      }
+
+      return [...month1, ...month2]
     },
-  },
-  created() {
-    setTimeout(() => {
-      this.inputDateOne = '2019-01-12'
-      this.inputDateTwo = ''
-    }, 5000)
   },
   methods: {
     formatDates(dateOne, dateTwo) {
@@ -198,20 +228,40 @@ export default {
       this.trigger = !this.trigger
     },
     applyMethod() {
-      console.log('apply')
+      const msg = `apply: ${this.formatDates(this.callbackDateOne, this.callbackDateTwo)}`
+      console.log(msg)
+      this.eventLog.unshift(msg)
     },
     openedMethod() {
-      console.log('opened')
+      const msg = 'opened'
+      console.log(msg)
+      this.eventLog.unshift(msg)
     },
     closedMethod() {
-      console.log('closed')
+      const msg = 'closed'
+      console.log(msg)
+      this.eventLog.unshift(msg)
       this.trigger = false
     },
     cancelledMethod() {
-      console.log('cancelled')
+      const msg = 'cancelled'
+      console.log(msg)
+      this.eventLog.unshift(msg)
     },
     changeMonthMethod(visibleMonths) {
-      console.log('change months', visibleMonths)
+      const msg = `change months: ${visibleMonths.join(' , ')}`
+      console.log(msg)
+      this.eventLog.unshift(msg)
+    },
+    onDateOneSelected(val) {
+      this.callbackDateOne = val
+      const msg = `date-one-selected: ${val || 'cleared'}`
+      this.eventLog.unshift(msg)
+    },
+    onDateTwoSelected(val) {
+      this.callbackDateTwo = val
+      const msg = `date-two-selected: ${val || 'cleared'}`
+      this.eventLog.unshift(msg)
     },
   },
 }
