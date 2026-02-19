@@ -322,9 +322,3 @@ If you plan to publish or reference this fork as the primary source, consider up
 
 ---
 
-## Demo: non-forcing locale selector (suggestion)
-
-Add a small selector in `dev/App.vue` to switch the demo's locale by setting per-instance override props. This keeps the demo interactive without forcing language changes for consumers.
-
----
-

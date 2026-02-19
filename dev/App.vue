@@ -5,6 +5,12 @@
       <label style="margin-right:12px;">
         <input type="checkbox" v-model="useDark" /> Dark mode
       </label>
+      <label>
+        Locale:
+        <select v-model="selectedLocale" style="margin-left:8px;">
+          <option v-for="loc in locales" :key="loc.id" :value="loc.id">{{ loc.label }}</option>
+        </select>
+      </label>
     </div>
     <div class="buttons">
       <button @click="toggleDatepickers">Hide datepickers</button>
@@ -29,6 +35,10 @@
             :date-one="inputDateOne"
             :min-date="'2018-08-28'"
             :months-to-show="2"
+
+            :month-names-override="currentLocale.monthNames"
+            :days-override="currentLocale.days"
+            :days-short-override="currentLocale.daysShort"
 
             :show-action-buttons="true"
             :show-month-year-select="true"
@@ -56,6 +66,9 @@
             :date-two="inputSingleDateTwo"
 
             :theme="demoTheme"
+            :month-names-override="currentLocale.monthNames"
+            :days-override="currentLocale.days"
+            :days-short-override="currentLocale.daysShort"
             @date-one-selected="val => { inputSingleDateOne = val }"
           />
         </div>
@@ -79,6 +92,9 @@
             :offset-y="10"
             :close-after-select="true"
             :theme="demoTheme"
+            :month-names-override="currentLocale.monthNames"
+            :days-override="currentLocale.days"
+            :days-short-override="currentLocale.daysShort"
             @date-one-selected="val => { buttonDateOne = val }"
             @date-two-selected="val => { buttonDateTwo = val; trigger = false }"
           />
@@ -110,6 +126,9 @@
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
           :theme="demoTheme"
+          :month-names-override="currentLocale.monthNames"
+          :days-override="currentLocale.days"
+          :days-short-override="currentLocale.daysShort"
           @date-one-selected="val => { inlineDateOne = val }"
         />
       </div>
@@ -131,6 +150,9 @@
 
           :disabled-dates="disabledDates"
           :theme="demoTheme"
+          :month-names-override="currentLocale.monthNames"
+          :days-override="currentLocale.days"
+          :days-short-override="currentLocale.daysShort"
           @date-one-selected="val => { withDisabledDatesDateOne = val }"
         />
       </div>
@@ -150,6 +172,9 @@
 
             :offset-y="10"
             :theme="demoTheme"
+            :month-names-override="currentLocale.monthNames"
+            :days-override="currentLocale.days"
+            :days-short-override="currentLocale.daysShort"
             @date-one-selected="onDateOneSelected"
             @date-two-selected="onDateTwoSelected"
             @apply="applyMethod"
@@ -184,6 +209,9 @@
           :offset-y="10"
           :theme="demoTheme"
           :close-after-select="true"
+          :month-names-override="currentLocale.monthNames"
+          :days-override="currentLocale.days"
+          :days-short-override="currentLocale.daysShort"
           @date-one-selected="val => { darkDateOne = val }"
           @date-two-selected="val => { darkDateTwo = val }"
         />
@@ -218,10 +246,32 @@ export default {
       eventLog: [],
       useDark: false,
       inlineMonthsToShow: 2,
+      // demo-only locales
+      selectedLocale: 'en',
+      locales: [
+        {
+          id: 'en',
+          label: 'English',
+          monthNames: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+          days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+          daysShort: ['Su','Mo','Tu','We','Th','Fr','Sa']
+        },
+        {
+          id: 'sv',
+          label: 'Svenska',
+          monthNames: ['Januari','Februari','Mars','April','Maj','Juni','Juli','Augusti','September','Oktober','November','December'],
+          days: ['Söndag','Måndag','Tisdag','Onsdag','Torsdag','Fredag','Lördag'],
+          daysShort: ['Sö','Må','Ti','On','To','Fr','Lö']
+        }
+      ],
       // demo-only flags
     }
   },
   computed: {
+
+    currentLocale() {
+      return this.locales.find(l => l.id === this.selectedLocale) || this.locales[0]
+    },
 
     demoTheme() {
       return this.useDark ? 'dark' : undefined
