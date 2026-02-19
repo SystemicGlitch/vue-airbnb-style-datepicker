@@ -216,7 +216,6 @@ import isBefore from 'date-fns/is_before'
 import isAfter from 'date-fns/is_after'
 import isValid from 'date-fns/is_valid'
 import { debounce, copyObject, findAncestor, randomString } from './../helpers'
-import vClickOutside from 'v-click-outside'
 import ResizeSelect from '../directives/ResizeSelect'
 
 export default {
@@ -233,8 +232,36 @@ export default {
     'apply',
   ],
   directives: {
-    // For Vue 3, v-click-outside exposes the directive on the `.directive` property
-    clickOutside: vClickOutside.directive,
+    // Local click-outside directive (Vue 3): listens on pointerdown and ignores
+    // clicks that land inside the element or inside the configured trigger
+    clickOutside: {
+      beforeMount(el, binding) {
+        const handler = event => {
+          try {
+            // composedPath covers shadow DOM; fallback to event.target checks
+            const path = event.composedPath ? event.composedPath() : (event.path || [])
+            if (path && path.indexOf(el) > -1) return
+
+            const vm = binding.instance
+            const trigger = vm && vm.triggerElement
+            if (trigger && (event.target === trigger || trigger.contains(event.target))) return
+
+            if (typeof binding.value === 'function') binding.value(event)
+            else if (binding.value && typeof binding.value.handler === 'function') binding.value.handler(event)
+          } catch (e) {
+            // ignore
+          }
+        }
+        el.__asdClickOutsideHandler__ = handler
+        document.addEventListener('pointerdown', handler)
+      },
+      unmounted(el) {
+        try {
+          document.removeEventListener('pointerdown', el.__asdClickOutsideHandler__)
+        } catch (e) {}
+        try { delete el.__asdClickOutsideHandler__ } catch (e) {}
+      },
+    },
     resizeSelect: ResizeSelect,
   },
   props: {
