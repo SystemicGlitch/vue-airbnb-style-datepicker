@@ -2,6 +2,7 @@
   <transition name="asd__fade">
     <div
       :id="wrapperId"
+      ref="wrapper"
       class="asd__wrapper"
       v-show="showDatepicker"
       :class="wrapperClasses"
@@ -219,7 +220,19 @@ import ResizeSelect from '../directives/ResizeSelect'
 
 export default {
   name: 'AirbnbStyleDatepicker',
+  // Declare all emitted events (Vue 3 best practice)
+  emits: [
+    'date-one-selected',
+    'date-two-selected',
+    'previous-month',
+    'next-month',
+    'opened',
+    'closed',
+    'cancelled',
+    'apply',
+  ],
   directives: {
+    // For Vue 3, v-click-outside exposes the directive on the `.directive` property
     clickOutside: vClickOutside.directive,
     resizeSelect: ResizeSelect,
   },
@@ -246,7 +259,8 @@ export default {
     yearsForSelect: { type: Number, default: 10 },
     isTest: {
       type: Boolean,
-      default: () => process.env.NODE_ENV === 'test',
+      // Avoid relying on webpack-style process.env; use Vite's import.meta.env when available
+      default: () => (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.MODE === 'test') || false,
     },
     trigger: { type: Boolean, default: false },
     closeAfterSelect: { type: Boolean, default: false },
@@ -479,11 +493,15 @@ export default {
       }
     },
     trigger(newValue, oldValue) {
-      if (newValue) {
-        setTimeout(() => {
+      // Allow external prop to both open and close the datepicker
+      // true -> open, false -> close
+      setTimeout(() => {
+        if (newValue) {
           this.openDatepicker()
-        }, 0)
-      }
+        } else {
+          this.closeDatepicker()
+        }
+      }, 0)
     },
   },
   created() {
@@ -502,7 +520,11 @@ export default {
       this.setStartDates()
     }, 200)
     this._handleWindowClickEvent = event => {
-      if (event.target.id === this.triggerElementId) {
+      // toggle when the trigger element (or any of its children) is clicked
+      if (!this.triggerElement) return
+      const clickedTrigger =
+        event.target === this.triggerElement || this.triggerElement.contains(event.target)
+      if (clickedTrigger) {
         event.stopPropagation()
         event.preventDefault()
         this.toggleDatepicker()
@@ -522,19 +544,27 @@ export default {
       this.openDatepicker()
     }
 
-    this.$el.addEventListener('keyup', this.handleKeyboardInput)
-    this.$el.addEventListener('keydown', this.trapKeyboardInput)
-    this.triggerElement.addEventListener('keyup', this.handleTriggerInput)
-    this.triggerElement.addEventListener('click', this._handleWindowClickEvent)
+    const wrapperEl = this.$refs && this.$refs.wrapper
+    if (wrapperEl) {
+      wrapperEl.addEventListener('keyup', this.handleKeyboardInput)
+      wrapperEl.addEventListener('keydown', this.trapKeyboardInput)
+    }
+    if (this.triggerElement) {
+      this.triggerElement.addEventListener('keyup', this.handleTriggerInput)
+      this.triggerElement.addEventListener('click', this._handleWindowClickEvent)
+    }
   },
-  destroyed() {
+  unmounted() {
     window.removeEventListener('resize', this._handleWindowResizeEvent)
-    window.removeEventListener('click', this._handleWindowClickEvent)
-
-    this.$el.removeEventListener('keyup', this.handleKeyboardInput)
-    this.$el.removeEventListener('keydown', this.trapKeyboardInput)
-    this.triggerElement.removeEventListener('keyup', this.handleTriggerInput)
-    this.triggerElement.removeEventListener('click', this._handleWindowClickEvent)
+    const wrapperEl = this.$refs && this.$refs.wrapper
+    if (wrapperEl) {
+      wrapperEl.removeEventListener('keyup', this.handleKeyboardInput)
+      wrapperEl.removeEventListener('keydown', this.trapKeyboardInput)
+    }
+    if (this.triggerElement) {
+      this.triggerElement.removeEventListener('keyup', this.handleTriggerInput)
+      this.triggerElement.removeEventListener('click', this._handleWindowClickEvent)
+    }
   },
   methods: {
     getDayStyles(date) {
@@ -593,9 +623,9 @@ export default {
       }
     },
     handleClickOutside(event) {
-      if (event.target.id === this.triggerElementId || !this.showDatepicker || this.inline) {
-        return
-      }
+      // if click was inside the trigger element, ignore (so trigger toggles work)
+      if (!this.showDatepicker || this.inline) return
+      if (this.triggerElement && (event.target === this.triggerElement || this.triggerElement.contains(event.target))) return
       this.closeDatepicker()
     },
     shouldHandleInput(event, key) {
@@ -870,7 +900,8 @@ export default {
           this.selectedDate1 = ''
         } else if (this.showActionButtons) {
           // if user has selected both dates, focus the apply button for accessibility
-          this.$refs['apply-button'].focus()
+          const applyBtn = this.$refs && this.$refs['apply-button']
+          if (applyBtn && typeof applyBtn.focus === 'function') applyBtn.focus()
         }
 
         if (this.allDatesSelected && this.closeAfterSelect) {
@@ -1020,7 +1051,9 @@ export default {
     openDatepicker() {
       this.positionDatepicker()
       this.setStartDates()
-      this.triggerElement.classList.add('datepicker-open')
+      if (this.triggerElement && this.triggerElement.classList) {
+        this.triggerElement.classList.add('datepicker-open')
+      }
       this.showDatepicker = true
       this.initialDate1 = this.dateOne
       this.initialDate2 = this.dateTwo
@@ -1043,13 +1076,19 @@ export default {
       }
       this.showDatepicker = false
       this.showKeyboardShortcutsMenu = false
-      this.triggerElement.classList.remove('datepicker-open')
+      if (this.triggerElement && this.triggerElement.classList) {
+        this.triggerElement.classList.remove('datepicker-open')
+      }
       this.$emit('closed')
     },
     openKeyboardShortcutsMenu() {
       this.showKeyboardShortcutsMenu = true
-      const shortcutMenuCloseBtn = this.$refs['keyboard-shortcus-menu-close']
-      this.$nextTick(() => shortcutMenuCloseBtn.focus())
+      const shortcutMenuCloseBtn = this.$refs && this.$refs['keyboard-shortcus-menu-close']
+      this.$nextTick(() => {
+        if (shortcutMenuCloseBtn && typeof shortcutMenuCloseBtn.focus === 'function') {
+          shortcutMenuCloseBtn.focus()
+        }
+      })
     },
     closeKeyboardShortcutsMenu() {
       this.showKeyboardShortcutsMenu = false
@@ -1060,6 +1099,7 @@ export default {
       this.closeDatepicker()
     },
     positionDatepicker() {
+      if (!this.triggerElement) return
       const triggerWrapperElement = findAncestor(this.triggerElement, '.datepicker-trigger')
       this.triggerPosition = this.triggerElement.getBoundingClientRect()
       if (triggerWrapperElement) {
@@ -1078,7 +1118,7 @@ export default {
         ? 2
         : this.monthsToShow
 
-      this.$nextTick(function() {
+      this.$nextTick(() => {
         const datepickerWrapper = document.getElementById(this.wrapperId)
         if (!this.triggerElement || !datepickerWrapper) {
           return
@@ -1095,7 +1135,8 @@ export default {
 </script>
 
 <style lang="scss">
-@import './../styles/transitions';
+@use 'sass:math';
+@use './../styles/transitions' as transitions;
 
 $tablet: 768px;
 $color-gray: rgba(0, 0, 0, 0.2);
@@ -1252,7 +1293,7 @@ $transition-time: 0.3s;
   }
   &__day-title {
     display: inline-block;
-    width: percentage(1/7);
+    width: math.percentage(math.div(1, 7));
     text-align: center;
     margin-bottom: 4px;
     color: rgba(0, 0, 0, 0.7);
