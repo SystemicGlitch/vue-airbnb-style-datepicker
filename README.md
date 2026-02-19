@@ -33,7 +33,8 @@ This package is ready to be consumed directly from a Git repo. A `prepare` scrip
 
 - Separate repo usage (recommended):
 ```bash
-npm install github:SystemicGlitch/vue-airbnb-style-datepicker#main
+# install from the repository default branch (master)
+npm install github:SystemicGlitch/vue-airbnb-style-datepicker#master
 # or pin a tag/commit
 npm install github:SystemicGlitch/vue-airbnb-style-datepicker#v2.7.0
 ```
@@ -236,7 +237,6 @@ However, these tests were not extensive; if you plan to use this in production, 
 ## License & attribution
 
 MIT. Based on the original work by Mikael Edebro: https://github.com/MikaelEdebro/vue-airbnb-style-datepicker
-Fork repository: https://github.com/SystemicGlitch/vue-airbnb-style-datepicker
 
 This fork updates the implementation and build tooling for Vue 3 and Vite.
 
