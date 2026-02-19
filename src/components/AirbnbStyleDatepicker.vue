@@ -473,6 +473,11 @@ export default {
     },
   },
   watch: {
+    monthsToShow(newVal, oldVal) {
+      // Recompute responsive month count and regenerate months when prop changes
+      this.positionDatepicker()
+      this.generateMonths()
+    },
     theme() {
       this._applyTheme()
       if (this.theme === 'auto' && !this._darkMo) {
@@ -1162,11 +1167,16 @@ export default {
       this.viewportWidth = viewportWidth + 'px'
       this.isMobile = viewportWidth < 768
       this.isTablet = viewportWidth >= 768 && viewportWidth <= 1024
-      this.showMonths = this.isMobile
-        ? 1
-        : this.isTablet && this.monthsToShow > 2
-        ? 2
-        : this.monthsToShow
+      // In inline mode, honor the requested months exactly (no responsive caps)
+      if (this.inline) {
+        this.showMonths = this.monthsToShow
+      } else {
+        this.showMonths = this.isMobile
+          ? 1
+          : this.isTablet && this.monthsToShow > 2
+          ? 2
+          : this.monthsToShow
+      }
 
       this.$nextTick(() => {
         const datepickerWrapper = document.getElementById(this.wrapperId)

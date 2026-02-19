@@ -27,7 +27,6 @@
             :trigger-element-id="'datepicker-input-trigger'"
             :mode="'range'"
             :date-one="inputDateOne"
-            :date-two="inputDateTwo"
             :min-date="'2018-08-28'"
             :months-to-show="2"
             :show-action-buttons="true"
@@ -85,6 +84,12 @@
 
       <div class="datepicker-container inline-with-input">
         <h3>Inline datepicker with input</h3>
+        <div class="controls" style="margin: 8px 0 12px;">
+          <label>
+            Months to show:
+            <input type="number" v-model.number="inlineMonthsToShow" min="1" max="6" style="width:70px; margin-left:6px;" />
+          </label>
+        </div>
         <input
           id="datepicker-inline-trigger"
           :value="formatDates(inlineDateOne)"
@@ -97,7 +102,7 @@
           :inline="true"
           :fullscreen-mobile="false"
           :date-one="inlineDateOne"
-          :months-to-show="2"
+          :months-to-show="inlineMonthsToShow"
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
           :theme="demoTheme"
@@ -205,6 +210,7 @@ export default {
       trigger: false,
       eventLog: [],
       useDark: false,
+      inlineMonthsToShow: 2,
     }
   },
   computed: {
