@@ -43,7 +43,7 @@
     "date-fns": "1.x",
     "vue": "3.x"
   },
-  
+
   "dependencies": {
     "v-click-outside": "^3.0.0"
   }
