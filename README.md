@@ -1,6 +1,6 @@
 # vue-airbnb-style-datepicker (Vue 3 fork)
 
-This is a modernized fork of the original [MikaelEdebro/vue-airbnb-style-datepicker](https://github.com/MikaelEdebro/vue-airbnb-style-datepicker), updated to work smoothly with Vue 3 and a Vite-based toolchain.
+This is a modernized fork of the original [MikaelEdebro/vue-airbnb-style-datepicker](https://github.com/MikaelEdebro/vue-airbnb-style-datepicker), updated to work smoothly with Vue 3 and a Vite-based toolchain. The source for this fork is available at https://github.com/SystemicGlitch/vue-airbnb-style-datepicker
 
 Highlights
 - Vue 3 compatible (plugin install via `app.use`)
@@ -22,8 +22,8 @@ Credit: All core logic and styles are based on the original work by Mikael Edebr
 - Original Examples: https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
 - Full original documentation (GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
 
-<img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-tablet.gif" width="1124" alt="Datepicker on tablet">
-<img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-mobile.gif" width="425" alt="Datepicker on mobile">
+<img src="https://raw.githubusercontent.com/SystemicGlitch/vue-airbnb-style-datepicker/master/docs/images/datepicker-tablet.gif" width="1124" alt="Datepicker on tablet">
+<img src="https://raw.githubusercontent.com/SystemicGlitch/vue-airbnb-style-datepicker/master/docs/images/datepicker-mobile.gif" width="425" alt="Datepicker on mobile">
 
 ---
 
@@ -236,6 +236,7 @@ However, these tests were not extensive; if you plan to use this in production, 
 ## License & attribution
 
 MIT. Based on the original work by Mikael Edebro: https://github.com/MikaelEdebro/vue-airbnb-style-datepicker
+Fork repository: https://github.com/SystemicGlitch/vue-airbnb-style-datepicker
 
 This fork updates the implementation and build tooling for Vue 3 and Vite.
 
