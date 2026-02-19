@@ -127,6 +127,9 @@
             <input type="checkbox" v-model="demoAutoFitInline" /> Auto-fit inline (flex months)
           </label>
           <label>
+            <input type="checkbox" v-model="showOutsideDaysDemo" /> Show outside days
+          </label>
+          <label>
             Day number position:
             <select v-model="demoDayPosition" style="margin-left:6px;">
               <option value="center">Center</option>
@@ -162,6 +165,7 @@
           :months-to-show="inlineMonthsToShow"
           :month-width="demoMonthWidth"
           :auto-fit-inline="demoAutoFitInline"
+          :show-outside-days="showOutsideDaysDemo"
           :day-number-position="demoDayPosition"
           :day-extra-position="demoDayExtraPosition"
 
@@ -197,6 +201,7 @@
           :months-to-show="2"
           :month-width="demoMonthWidth"
           :auto-fit-inline="demoAutoFitInline"
+          :show-outside-days="showOutsideDaysDemo"
           :day-number-position="demoDayPosition"
           :day-extra-position="demoDayExtraPosition"
 
@@ -287,7 +292,9 @@
         :days-override="currentLocale.days"
         :days-short-override="currentLocale.daysShort"
         :reservations="showReservationsDemo ? demoReservations : []"
+        :disabled-dates="showReservationsDemo ? demoBlockedDates : []"
         @date-one-selected="val => { inlineDateOne = val }"
+        @reservation-hovered="onReservationHovered"
       >
         <template #day-extra="{ day, date }">
           <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
@@ -296,7 +303,7 @@
       <div v-if="showReservationsDemo" style="margin-top:12px;">
         <h4>Bookings</h4>
         <ul style="list-style:none; padding:0; margin:6px 0 0;">
-          <li v-for="(r, i) in demoReservations" :key="i" style="display:flex; gap:10px; align-items:center; padding:6px 0;">
+          <li v-for="(r, i) in demoReservations" :key="r.id || i" :class="['demo-booking-row', { 'demo-hovered': (hoveredBookingId === (r.id || i)) }]" style="display:flex; gap:10px; align-items:center; padding:6px 0;">
             <span :style="{ width: '18px', height: '12px', background: r.color || '#bbb', display: 'inline-block', borderRadius: '3px', border: '1px solid rgba(0,0,0,0.08)' }"></span>
             <span style="font-size:0.95em; font-weight:600; min-width: 140px;">{{ r.label || 'Guest' }}</span>
             <span style="font-size:0.95em">{{ r.start }} — {{ r.end }} <small style="color:#666;">{{ r.color ? r.color : '(auto color)' }}</small></span>
@@ -360,19 +367,26 @@ export default {
       demoAutoFitInline: true, // default is true in component
       demoDayPosition: 'top-left', // default is 'top-left' in component
       demoDayExtraPosition: 'bottom', // show a selected default in the UI
+      showOutsideDaysDemo: false,
       // reservations demo
       showReservationsDemo: true,
       demoReservations: [
-        { start: '2026-03-02', end: '2026-03-04', label: 'Alice Nguyen', color: '#e67e22' },
-        { start: '2026-03-06', end: '2026-03-10', label: "Brian O'Connor" },
-        { start: '2026-03-12', end: '2026-03-17', label: 'Chen Wei' },
+        { id: 101, start: '2026-03-02', end: '2026-03-04', label: 'Alice Nguyen', tooltip: 'Guest: Alice Nguyen', color: '#e67e22' },
+        { id: 102, start: '2026-03-06', end: '2026-03-10', label: "Brian O'Connor", tooltip: "Guest: Brian O'Connor" },
+        { id: 103, start: '2026-03-12', end: '2026-03-17', label: 'Chen Wei', tooltip: 'Guest: Chen Wei' },
         // One-night stay: check-in 20th, check-out 21st -> diagonal start on 20th and diagonal end on 21st
-        { start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', color: '#8e44ad' },
-        { start: '2026-03-24', end: '2026-03-27', label: 'Evelyn Park' },
-        { start: '2026-03-29', end: '2026-04-02', label: 'Felipe García', color: '#16a085' },
-        { start: '2026-04-05', end: '2026-04-08', label: 'Grace Kim' },
-        { start: '2026-04-10', end: '2026-04-12', label: 'Hiro Tanaka' },
+        { id: 104, start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', tooltip: 'Guest: Day Guest', color: '#8e44ad' },
+        { id: 105, start: '2026-03-24', end: '2026-03-27', label: 'Evelyn Park', tooltip: 'Guest: Evelyn Park' },
+        { id: 106, start: '2026-03-29', end: '2026-04-02', label: 'Felipe García', tooltip: 'Guest: Felipe García', color: '#16a085' },
+        { id: 107, start: '2026-04-05', end: '2026-04-08', label: 'Grace Kim', tooltip: 'Guest: Grace Kim' },
+        { id: 108, start: '2026-04-10', end: '2026-04-12', label: 'Hiro Tanaka', tooltip: 'Guest: Hiro Tanaka' },
       ],
+      // Blocked dates (disabled) example
+      demoBlockedDates: [
+        '2026-03-11','2026-03-18','2026-03-22','2026-03-31',
+        '2026-04-03','2026-04-09'
+      ],
+      hoveredBookingId: null,
     }
   },
   computed: {
@@ -394,6 +408,7 @@ export default {
       if (this.demoAutoFitInline !== null) p.autoFitInline = this.demoAutoFitInline
       if (this.demoDayPosition) p.dayNumberPosition = this.demoDayPosition
       if (this.demoDayExtraPosition) p.dayExtraPosition = this.demoDayExtraPosition
+      p.showOutsideDays = this.showOutsideDaysDemo
       // always include inline mode for the reservations demo when used
       p.inline = true
       return p
@@ -432,6 +447,9 @@ export default {
     },
   },
   methods: {
+    onReservationHovered(payload) {
+      this.hoveredBookingId = payload && (payload.id != null ? payload.id : payload.index)
+    },
     priceFor(day) {
       const n = Number(day)
       if (!n || isNaN(n)) return '—'
@@ -631,4 +649,10 @@ input {
   right: 6px;
 }
 .demo-price { color: inherit; font-weight:600; font-size: 0.95em; display:block; }
+
+/* Highlight a booking row when its reservation is hovered in the calendar */
+.demo-booking-row.demo-hovered {
+  background: rgba(0, 166, 153, 0.09);
+  border-radius: 6px;
+}
 </style>

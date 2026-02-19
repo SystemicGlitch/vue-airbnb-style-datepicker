@@ -113,16 +113,18 @@
                 <tr class="asd__week" v-for="(week, index) in month.weeks" :key="index">
                   <td
                     class="asd__day"
-                    v-for="({fullDate, dayNumber}, index) in week"
+                    v-for="({fullDate, dayNumber, outside}, index) in week"
                     :key="index + '_' + dayNumber"
                     :data-date="fullDate"
                     :ref="`date-${fullDate}`"
                     :tabindex="isDateVisible(fullDate) && isSameDate(focusedDate, fullDate) ? 0 : -1"
                     :aria-label="isDateVisible(fullDate) ? getAriaLabelForDate(fullDate) : false"
+                    :title="reservationFor(fullDate) ? (reservationFor(fullDate).tooltip || reservationFor(fullDate).label) : null"
                     :class="[{
                       'asd__day--enabled': dayNumber !== 0,
                       'asd__day--empty': dayNumber === 0,
                       'asd__day--disabled': isDisabled(fullDate),
+                      'asd__day--outside': !!outside && dayNumber !== 0,
                       'asd__day--selected': fullDate && (selectedDate1 === fullDate || selectedDate2 === fullDate),
                       'asd__day--in-range': isInRange(fullDate),
                       'asd__day--today': fullDate && isToday(fullDate),
@@ -132,12 +134,19 @@
                     }, customizedDateClass(fullDate)]"
                     :style="getDayStyles(fullDate)"
                     @mouseover="() => { setHoverDate(fullDate) }"
+                    @mouseleave="() => { setHoverDate('') }"
                   >
                     <!-- Reservation/blocked overlay (behind the content) -->
                     <div
                       v-if="dayNumber && reservationFor(fullDate)"
                       class="asd__reservation"
-                      :class="'asd__reservation--' + reservationFor(fullDate).variant"
+                      :class="[
+                        'asd__reservation--' + reservationFor(fullDate).variant,
+                        { 'asd__reservation--hover': hoveredReservationIdx !== null,
+                          'asd__reservation--hover-match': hoveredReservationIdx !== null && reservationFor(fullDate).idx === hoveredReservationIdx }
+                      ]"
+                      :data-resv="reservationFor(fullDate).idx"
+                      :title="reservationFor(fullDate).label || undefined"
                       :style="{ '--resv-color': reservationFor(fullDate).color }"
                     />
                     <button
@@ -251,6 +260,8 @@ export default {
     'closed',
     'cancelled',
     'apply',
+    // New: emitted when hovering a reservation date; payload is { id, index, start, end } or null on leave
+    'reservation-hovered',
   ],
   directives: {
     // Local click-outside directive (Vue 3): listens on pointerdown and ignores
@@ -306,6 +317,8 @@ export default {
     showShortcutsMenuTrigger: { type: Boolean, default: true },
     showMonthYearSelect: { type: Boolean, default: false },
     yearsForSelect: { type: Number, default: 10 },
+    // Show days from previous/next month inside the grid (faded)
+    showOutsideDays: { type: Boolean, default: false },
     // When inline, allow months to flex to fill available space before wrapping
     // If false, each month keeps a fixed width and never stretches
     autoFitInline: { type: Boolean, default: true },
@@ -443,6 +456,7 @@ export default {
       selectedDate2: '',
       isSelectingDate1: true,
       hoverDate: '',
+      hoveredReservationIdx: null,
       focusedDate: '',
       alignRight: false,
       triggerPosition: {},
@@ -825,7 +839,7 @@ export default {
           const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
           const base = r.color || this._hashColor(`${r.start}|${r.end}`)
           const color = this._adjustForContrast(base)
-          return { variant, color }
+          return { variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label }
         }
       }
       return null
@@ -1086,6 +1100,14 @@ export default {
       const daysInMonth = getDaysInMonth(date)
       const year = format(date, 'YYYY')
       const month = format(date, 'MM')
+      const dateObj = new Date(date)
+      const prevMonthDate = subMonths(dateObj, 1)
+      const nextMonthDate = addMonths(dateObj, 1)
+      const prevYear = format(prevMonthDate, 'YYYY')
+      const prevMonth = format(prevMonthDate, 'MM')
+      const nextYear = format(nextMonthDate, 'YYYY')
+      const nextMonth = format(nextMonthDate, 'MM')
+      const prevMonthDays = getDaysInMonth(prevMonthDate)
       let firstDayInWeek = parseInt(format(date, this.sundayFirst ? 'd' : 'E'))
       if (this.sundayFirst) {
         firstDayInWeek++
@@ -1095,7 +1117,18 @@ export default {
 
       // add empty days to get first day in correct position
       for (let s = 1; s < firstDayInWeek; s++) {
-        week.push(weekDayNotInMonth)
+        if (this.showOutsideDays) {
+          const dayNumber = prevMonthDays - (firstDayInWeek - 1 - s)
+          const dayNumberFull = dayNumber < 10 ? '0' + dayNumber : '' + dayNumber
+          week.push({
+            dayNumber,
+            dayNumberFull,
+            fullDate: prevYear + '-' + prevMonth + '-' + dayNumberFull,
+            outside: true,
+          })
+        } else {
+          week.push(weekDayNotInMonth)
+        }
       }
       for (let d = 0; d < daysInMonth; d++) {
         let isLastDayInMonth = d >= daysInMonth - 1
@@ -1105,6 +1138,7 @@ export default {
           dayNumber,
           dayNumberFull: dayNumberFull,
           fullDate: year + '-' + month + '-' + dayNumberFull,
+          outside: false,
         })
 
         if (week.length === 7) {
@@ -1112,7 +1146,18 @@ export default {
           week = []
         } else if (isLastDayInMonth) {
           for (let i = 0; i < 7 - week.length; i++) {
-            week.push(weekDayNotInMonth)
+            if (this.showOutsideDays) {
+              const dayNumber = i + 1
+              const dayNumberFull = dayNumber < 10 ? '0' + dayNumber : '' + dayNumber
+              week.push({
+                dayNumber,
+                dayNumberFull,
+                fullDate: nextYear + '-' + nextMonth + '-' + dayNumberFull,
+                outside: true,
+              })
+            } else {
+              week.push(weekDayNotInMonth)
+            }
           }
           weeks.push(week)
           week = []
@@ -1172,6 +1217,16 @@ export default {
     },
     setHoverDate(date) {
       this.hoverDate = date
+      const rr = this.reservationFor(date)
+      this.hoveredReservationIdx = rr ? rr.idx : null
+      // Emit hovered reservation info so parent apps can react (e.g., highlight a booking row)
+      if (rr) {
+        const res = this.reservations[rr.idx]
+        const id = (res && res.id) != null ? res.id : rr.idx
+        this.$emit('reservation-hovered', { id, index: rr.idx, start: res.start, end: res.end })
+      } else {
+        this.$emit('reservation-hovered', null)
+      }
     },
     setFocusedDate(date) {
       const formattedDate = format(date, this.dateFormat)
@@ -1763,6 +1818,16 @@ $border: 1px solid var(--asd-day-border);
     &--empty {
       border: none;
     }
+    /* Outside days (from previous/next month) are slightly muted by default */
+    &--outside {
+      opacity: 0.6;
+    }
+    /* But if an outside day is also selected/in-range/hovered, show at full strength */
+    &--outside.asd__day--selected,
+    &--outside.asd__day--in-range,
+    &--outside.asd__day--hovered {
+      opacity: 1;
+    }
     &--disabled {
       &:hover {
         background-color: transparent;
@@ -1796,11 +1861,16 @@ $border: 1px solid var(--asd-day-border);
     inset: 0;
     z-index: 0;
     pointer-events: none;
+    transition: opacity 0.12s ease, filter 0.12s ease; /* only affect the fill, not borders */
   }
   &__reservation--middle { background: var(--resv-color); }
   &__reservation--single { background: var(--resv-color); }
   &__reservation--start { background: linear-gradient(135deg, transparent 49.5%, var(--resv-color) 50%); }
   &__reservation--end { background: linear-gradient(135deg, var(--resv-color) 0 50%, transparent 50%); }
+  /* Group hover: when hovering a reserved day, dim all reservations and emphasize matching group */
+  &__reservation--hover { opacity: 0.55; filter: saturate(0.9); }
+  /* Emphasize only the colored fill for the hovered reservation; avoid any extra border glow */
+  &__reservation--hover-match { opacity: 1; filter: saturate(1.05) brightness(1.03); }
   &__day-button {
     background: transparent;
     width: 100%;

@@ -18,10 +18,15 @@ Credit: All core logic and styles are based on the original work by Mikael Edebr
 
 ---
 
-## Original docs, examples, and screenshots
+## Examples, screenshots, and original docs
 
-- Original Examples: https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
-- Full original documentation (GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
+- New demo-like examples (copy of the demo page): [docs/examples.html](docs/examples.html)
+- Screenshots from the demo:
+	- Reservations highlighting and tooltips: ![Reservations](docs/reservations.png)
+	- Three months inline layout: ![Months to show](docs/monthstoshow.png)
+
+- Original Examples (legacy): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
+- Full original documentation (legacy GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
 
 <img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-tablet.gif" width="1124" alt="Datepicker on tablet">
 <img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-mobile.gif" width="425" alt="Datepicker on mobile">
@@ -129,6 +134,38 @@ export default {
 </script>
 ```
 
+### Reservations, blocked dates, and tooltips (new)
+
+Reservations can be visualized directly on the calendar. Pass `reservations` with optional `id`, `label`, `tooltip`, and `color`. The component emits `reservation-hovered` with `{ id, index, start, end }` so you can react in your UI (e.g., highlight a matching row).
+
+```vue
+<airbnb-style-datepicker
+	:inline="true"
+	:months-to-show="2"
+	:reservations="bookings"
+	:disabled-dates="blockedDates"
+	@reservation-hovered="onReservationHovered"
+/>
+
+<script>
+export default {
+	data(){
+		return {
+			bookings: [
+				{ id: 101, start: '2026-03-02', end: '2026-03-04', label: 'Alice Nguyen', tooltip: 'Guest: Alice Nguyen', color: '#e67e22' },
+				{ id: 104, start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', tooltip: 'One-night stay', color: '#8e44ad' },
+			],
+			blockedDates: ['2026-03-11','2026-03-18','2026-03-22'],
+			hoveredBookingId: null,
+		}
+	},
+	methods: {
+		onReservationHovered(payload){ this.hoveredBookingId = payload ? payload.id : null }
+	}
+}
+</script>
+```
+
 ### Inline layout and sizing (new)
 
 This fork adds two props to control inline layout and sizing:
@@ -152,6 +189,12 @@ Examples:
 	:months-to-show="3"
 	:month-width="320"
 	:auto-fit-inline="false" />
+
+Outside-month days
+- Control visibility of previous/next month days with the prop `showOutsideDays` (default: `false`).
+```vue
+<airbnb-style-datepicker :inline="true" :months-to-show="2" :show-outside-days="true" />
+```
 ```
 
 ### Customizing day content and positioning (new)
@@ -261,7 +304,7 @@ npm run dev
 # build library (ES/CJS/UMD) and demo
 npm run build
 
-# preview the built demo
+# preview the built demo (served from the project root)
 npm run preview
 ```
 
@@ -355,6 +398,8 @@ rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
 npm run dev
 ```
+
+- The static HTML examples in `docs/examples.html` use the local UMD build (`dist/vue-airbnb-style-datepicker.js`) and Vue 3 from a CDN. Be sure to run a build before opening the file directly, or serve the repo with any static server so the assets load.
 
 - If you consume this package from GitHub, the `prepare` script will build the library on `npm install` — ensure your CI or host supports building from source.
 - If you see a browser console message about an async response to a listener, that usually comes from a browser extension (not from this repo).
