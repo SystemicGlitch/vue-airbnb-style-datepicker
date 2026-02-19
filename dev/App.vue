@@ -146,6 +146,26 @@
         </div>
       </div>
     </div>
+
+    <div class="datepicker-container with-button">
+      <h3>Range datepicker (Dark theme)</h3>
+      <div class="datepicker-trigger">
+        <button id="datepicker-button-dark-trigger">{{ formatDates(darkDateOne, darkDateTwo) || 'Select dates' }}</button>
+
+        <airbnb-style-datepicker
+          :trigger-element-id="'datepicker-button-dark-trigger'"
+          :mode="'range'"
+          :date-one="darkDateOne"
+          :date-two="darkDateTwo"
+          :months-to-show="2"
+          :offset-y="10"
+          :theme="'dark'"
+          :close-after-select="true"
+          @date-one-selected="val => { darkDateOne = val }"
+          @date-two-selected="val => { darkDateTwo = val }"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -162,6 +182,8 @@ export default {
       inputSingleDateTwo: '',
       buttonDateOne: '',
       buttonDateTwo: '',
+      darkDateOne: '',
+      darkDateTwo: '',
       inlineDateOne: '',
       withDisabledDatesDateOne: '',
       callbackDateOne: '',
@@ -253,6 +275,7 @@ export default {
       console.log(msg)
       this.eventLog.unshift(msg)
     },
+
     onDateOneSelected(val) {
       this.callbackDateOne = val
       const msg = `date-one-selected: ${val || 'cleared'}`

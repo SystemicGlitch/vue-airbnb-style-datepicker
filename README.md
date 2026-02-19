@@ -9,6 +9,10 @@ Highlights
 - programmatic open/close toggle fixed via the `trigger` prop watcher
 - Dev demo preserved under `dev/`
 
+New in this fork
+- Backwards range selection (second click earlier than the first swaps start/end)
+- Optional `theme` prop for opt‑in dark mode per instance (`'dark' | 'light'`)
+
 Credit: All core logic and styles are based on the original work by Mikael Edebro (MIT). This fork focuses on compatibility, build, and small UX fixes.
 
 ---
@@ -123,6 +127,39 @@ export default {
 </script>
 ```
 
+### Dark theme (opt‑in, per instance)
+
+This fork exposes a minimal theming API that follows Vue 3 best practices without custom color props. Pass `theme="dark"` to switch a single instance to a dark palette; other instances remain light.
+
+```vue
+<template>
+	<!-- Light (default) -->
+	<airbnb-style-datepicker :trigger-element-id="'light-trigger'" />
+
+	<!-- Dark instance -->
+	<airbnb-style-datepicker :trigger-element-id="'dark-trigger'" :theme="'dark'" />
+</template>
+```
+
+Under the hood the component uses CSS variables scoped to the wrapper element. If you want to fine‑tune colors, override the variables in your global CSS:
+
+```css
+/* Optional: tweak dark palette */
+.asd__wrapper[data-theme='dark']{
+	--asd-bg: #1f1f1f;
+	--asd-text: #f0f0f0;
+	--asd-selected: #1db9aa;
+	--asd-selected-text: #0b0b0b;
+	--asd-in-range: #155e67;
+	--asd-in-range-border: #2db9c8;
+	--asd-hovered-in-range: #197f8b;
+	--asd-disabled: #2a2a2a;
+	--asd-border-color: rgba(255,255,255,.2);
+	--asd-day-hover-bg: #2d2d2d;
+	--asd-day-border: #3a3a3a;
+}
+```
+
 Notes
 - `trigger-element-id` must match an element that exists when the component mounts.
 - In programmatic scenarios, keep your boolean in sync via `@opened`/`@closed`.
@@ -188,4 +225,10 @@ However, these tests were not extensive; if you plan to use this in production, 
 MIT. Based on the original work by Mikael Edebro: https://github.com/MikaelEdebro/vue-airbnb-style-datepicker
 
 This fork updates the implementation and build tooling for Vue 3 and Vite.
+
+Changelog (high level)
+- Vue 3 compatibility and Vite builds
+- Programmatic toggle fixes and outside‑click close on Vue 3
+- Range selection improvements (backwards selection; fresh start after full range when action buttons are shown)
+- Opt‑in dark theme via `theme="dark"` + CSS variables
 

@@ -5,6 +5,7 @@
       ref="wrapper"
       class="asd__wrapper"
       v-show="showDatepicker"
+      :data-theme="theme === 'dark' ? 'dark' : null"
       :class="wrapperClasses"
       :style="showFullscreen ? undefined : wrapperStyles"
       v-click-outside="handleClickOutside"
@@ -264,6 +265,8 @@ export default {
     },
     trigger: { type: Boolean, default: false },
     closeAfterSelect: { type: Boolean, default: false },
+    // Optional theme selector: 'light' (default) or 'dark'
+    theme: { type: String, default: undefined },
   },
   data() {
     return {
@@ -568,36 +571,10 @@ export default {
   },
   methods: {
     getDayStyles(date) {
-      const isSelected = this.isSelected(date)
-      const isInRange = this.isInRange(date)
-      const isDisabled = this.isDisabled(date)
-      const isHoveredInRange = this.isHoveredInRange(date)
-
-      let styles = {
+      // Keep width inline; colors and borders are now driven by CSS variables and state classes
+      return {
         width: (this.width - 30) / 7 + 'px',
-        background: isSelected
-          ? this.colors.selected
-          : isHoveredInRange
-          ? this.colors.hoveredInRange
-          : isInRange
-          ? this.colors.inRange
-          : '',
-        color: isSelected
-          ? this.colors.selectedText
-          : isInRange || isHoveredInRange
-          ? this.colors.selectedText
-          : this.colors.text,
-        border: isSelected
-          ? '1px double ' + this.colors.selected
-          : (isInRange && this.allDatesSelected) || isHoveredInRange
-          ? '1px double ' + this.colors.inRangeBorder
-          : '',
       }
-
-      if (isDisabled) {
-        styles.background = this.colors.disabled
-      }
-      return styles
     },
     getAriaLabelForDate(date) {
       const dateLabel = format(date, this.dateLabelFormat)
@@ -1153,11 +1130,40 @@ export default {
 @use 'sass:math';
 @use './../styles/transitions' as transitions;
 
-$tablet: 768px;
-$color-gray: rgba(0, 0, 0, 0.2);
-$border-normal: 1px solid $color-gray;
-$border: 1px solid #e4e7e7;
 $transition-time: 0.3s;
+
+/* CSS variables: default (light) theme, scoped to the component */
+.asd__wrapper {
+  --asd-bg: #ffffff;
+  --asd-text: #565a5c;
+  --asd-selected: #00a699;
+  --asd-selected-text: #ffffff;
+  --asd-in-range: #66e2da;
+  --asd-in-range-border: #33dacd;
+  --asd-hovered-in-range: #67f6ee;
+  --asd-disabled: #ffffff;
+  --asd-border-color: rgba(0, 0, 0, 0.2);
+  --asd-day-hover-bg: #e4e7e7;
+  --asd-day-border: #e4e7e7;
+}
+/* Manual dark theme override (opt-in) */
+.asd__wrapper[data-theme='dark'] {
+  --asd-bg: #1f1f1f;
+  --asd-text: #e7e7e7;
+  --asd-selected: #1db9aa;
+  --asd-selected-text: #0b0b0b;
+  --asd-in-range: #155e67;
+  --asd-in-range-border: #2db9c8;
+  --asd-hovered-in-range: #197f8b;
+  --asd-disabled: #2a2a2a;
+  --asd-border-color: rgba(255, 255, 255, 0.2);
+  --asd-day-hover-bg: #2d2d2d;
+  --asd-day-border: #3a3a3a;
+}
+
+$tablet: 768px;
+$border-normal: 1px solid var(--asd-border-color);
+$border: 1px solid var(--asd-day-border);
 
 .datepicker-trigger {
   position: relative;
@@ -1170,7 +1176,8 @@ $transition-time: 0.3s;
     white-space: nowrap;
     text-align: center;
     overflow: hidden;
-    background-color: white;
+    background-color: var(--asd-bg);
+    color: var(--asd-text);
 
     *,
     *:after,
@@ -1270,7 +1277,7 @@ $transition-time: 0.3s;
     position: absolute;
     top: 12px;
     z-index: 10;
-    background: white;
+    background: var(--asd-bg);
 
     &--previous {
       left: 0;
@@ -1282,7 +1289,7 @@ $transition-time: 0.3s;
     }
 
     > button {
-      background-color: white;
+      background-color: var(--asd-bg);
       border: $border;
       border-radius: 3px;
       padding: 4px 8px;
@@ -1295,7 +1302,8 @@ $transition-time: 0.3s;
       > svg {
         height: 19px;
         width: 19px;
-        fill: #82888a;
+        fill: var(--asd-text);
+        opacity: 0.8;
       }
     }
   }
@@ -1311,7 +1319,8 @@ $transition-time: 0.3s;
     width: math.percentage(math.div(1, 7));
     text-align: center;
     margin-bottom: 4px;
-    color: rgba(0, 0, 0, 0.7);
+    color: var(--asd-text);
+    opacity: 0.7;
     font-size: 0.8em;
     margin-left: -1px;
   }
@@ -1319,7 +1328,7 @@ $transition-time: 0.3s;
   &__month-table {
     border-collapse: collapse;
     border-spacing: 0;
-    background: white;
+    background: var(--asd-bg);
     width: 100%;
     max-width: 100%;
   }
@@ -1340,6 +1349,7 @@ $transition-time: 0.3s;
     margin: 0 0 30px;
     line-height: 1.4em;
     font-weight: bold;
+    color: var(--asd-text);
   }
   &__month-year-select {
     &::-ms-expand {
@@ -1361,10 +1371,11 @@ $transition-time: 0.3s;
     height: $size;
     padding: 0;
     overflow: hidden;
+    color: var(--asd-text);
     &--enabled {
       border: $border;
       &:hover {
-        background-color: #e4e7e7;
+        background-color: var(--asd-day-hover-bg);
       }
       &:focus {
         outline: auto 5px Highlight;
@@ -1387,6 +1398,21 @@ $transition-time: 0.3s;
         background-color: transparent;
       }
     }
+    &--selected {
+      background: var(--asd-selected) !important;
+      color: var(--asd-selected-text) !important;
+      border: 1px double var(--asd-selected) !important;
+    }
+    &--in-range {
+      background: var(--asd-in-range) !important;
+      color: var(--asd-selected-text) !important;
+      border: 1px double var(--asd-in-range-border) !important;
+    }
+    &--hovered {
+      background: var(--asd-hovered-in-range) !important;
+      color: var(--asd-selected-text) !important;
+      border: 1px double var(--asd-in-range-border) !important;
+    }
   }
   &__day-button {
     background: transparent;
@@ -1407,6 +1433,7 @@ $transition-time: 0.3s;
     padding-top: 10px;
     margin-bottom: 12px;
     button {
+      color: var(--asd-text);
       display: block;
       position: relative;
       background: transparent;
