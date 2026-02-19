@@ -133,6 +133,13 @@
                     :style="getDayStyles(fullDate)"
                     @mouseover="() => { setHoverDate(fullDate) }"
                   >
+                    <!-- Reservation/blocked overlay (behind the content) -->
+                    <div
+                      v-if="dayNumber && reservationFor(fullDate)"
+                      class="asd__reservation"
+                      :class="'asd__reservation--' + reservationFor(fullDate).variant"
+                      :style="{ '--resv-color': reservationFor(fullDate).color }"
+                    />
                     <button
                       class="asd__day-button"
                       :class="dayNumberPositionClass"
@@ -325,16 +332,19 @@ export default {
     // one of: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     dayNumberPosition: {
       type: String,
-      default: 'center',
+      default: 'top-left',
       validator: v => ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(v),
     },
     // Additional day content (day-extra slot) positioning
     // one of: 'center' | 'top' | 'bottom' | 'left' | 'right'
     dayExtraPosition: {
       type: String,
-      default: 'center',
+      default: 'bottom',
       validator: v => ['center', 'top', 'bottom', 'left', 'right'].includes(v),
     },
+    // Reservation/blocked ranges to visualize
+    // [{ start: 'YYYY-MM-DD', end: 'YYYY-MM-DD', color?: '#RRGGBB' }]
+    reservations: { type: Array, default: () => [] },
   },
   data() {
     return {
@@ -741,6 +751,84 @@ export default {
       if (this.theme === 'dark') this.isDark = true
       else if (this.theme === 'light') this.isDark = false
       else this.isDark = this._detectQuasarDark()
+    },
+    // --- Reservation colors & detection ---
+    _hexToRgb(c) {
+      try {
+        if (!c) return null
+        if (c.startsWith('#')) {
+          const n = c.length === 4 ? c.replace(/#(.)(.)(.)/, '#$1$1$2$2$3$3') : c
+          const m = n.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i)
+          if (!m) return null
+          return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) }
+        }
+        const m = c.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
+        if (m) return { r: +m[1], g: +m[2], b: +m[3] }
+      } catch (e) {}
+      return null
+    },
+    _rgbToHex({ r, g, b }) {
+      const h = n => ('0' + Math.max(0, Math.min(255, Math.round(n))).toString(16)).slice(-2)
+      return `#${h(r)}${h(g)}${h(b)}`
+    },
+    _luminance({ r, g, b }) {
+      const a = [r, g, b].map(v => {
+        v /= 255
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+      })
+      return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]
+    },
+    _adjustForContrast(color) {
+      const rgb = this._hexToRgb(color)
+      if (!rgb) return color
+      const L = this._luminance(rgb)
+      if (this.isDark) {
+        if (L > 0.85) {
+          const f = 0.75
+          return this._rgbToHex({ r: rgb.r * f, g: rgb.g * f, b: rgb.b * f })
+        }
+      } else {
+        if (L < 0.12) {
+          const f = 1.35
+          return this._rgbToHex({ r: rgb.r * f, g: rgb.g * f, b: rgb.b * f })
+        }
+      }
+      return color
+    },
+    _hashColor(key) {
+      let h = 0
+      for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+      const hue = h % 360
+      const s = 60
+      const l = this.isDark ? 40 : 65
+      const c = (1 - Math.abs(2 * l / 100 - 1)) * (s / 100)
+      const x = c * (1 - Math.abs(((hue / 60) % 2) - 1))
+      const m = l / 100 - c / 2
+      let r = 0, g = 0, b = 0
+      if (hue < 60) { r = c; g = x }
+      else if (hue < 120) { r = x; g = c }
+      else if (hue < 180) { g = c; b = x }
+      else if (hue < 240) { g = x; b = c }
+      else if (hue < 300) { r = x; b = c }
+      else { r = c; b = x }
+      return this._rgbToHex({ r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 })
+    },
+    reservationFor(date) {
+      if (!date || !this.reservations || !this.reservations.length) return null
+      for (let i = 0; i < this.reservations.length; i++) {
+        const r = this.reservations[i]
+        if (!r || !r.start || !r.end) continue
+        const inRange = (isAfter(date, r.start) || date === r.start) && (isBefore(date, r.end) || date === r.end)
+        if (inRange) {
+          const isStart = date === r.start
+          const isEnd = date === r.end
+          const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
+          const base = r.color || this._hashColor(`${r.start}|${r.end}`)
+          const color = this._adjustForContrast(base)
+          return { variant, color }
+        }
+      }
+      return null
     },
     getDayStyles(date) {
       // Keep width inline; colors and borders are now driven by CSS variables and state classes
@@ -1653,6 +1741,7 @@ $border: 1px solid var(--asd-day-border);
     padding: 0;
     overflow: hidden;
     color: var(--asd-text);
+    position: relative; /* anchor for reservation overlays */
     &--enabled {
       border: $border;
       &:hover {
@@ -1701,6 +1790,17 @@ $border: 1px solid var(--asd-day-border);
       }
     }
   }
+  /* Reservation overlay fill */
+  &__reservation {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+  &__reservation--middle { background: var(--resv-color); }
+  &__reservation--single { background: var(--resv-color); }
+  &__reservation--start { background: linear-gradient(135deg, transparent 49.5%, var(--resv-color) 50%); }
+  &__reservation--end { background: linear-gradient(135deg, var(--resv-color) 0 50%, transparent 50%); }
   &__day-button {
     background: transparent;
     width: 100%;

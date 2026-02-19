@@ -174,13 +174,6 @@
           :key="selectedLocale"
           @date-one-selected="val => { inlineDateOne = val }"
         >
-          <!-- Example of custom day slot: star first day of each month -->
-          <template #day="{ day, date }">
-            <div class="demo-day-slot" :title="date">
-              <span>{{ day }}</span>
-              <small v-if="date && date.endsWith('-01')" class="demo-star">★</small>
-            </div>
-          </template>
           <!-- Example of additional day content: demo price -->
           <template #day-extra="{ day, date }">
             <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
@@ -254,7 +247,6 @@
         </div>
       </div>
     </div>
-
     <div class="datepicker-container with-button">
       <h3>Range datepicker ({{ demoThemeLabel }})</h3>
       <div class="datepicker-trigger">
@@ -277,6 +269,38 @@
           @date-one-selected="val => { darkDateOne = val }"
           @date-two-selected="val => { darkDateTwo = val }"
         />
+      </div>
+    </div>
+
+    <!-- Reservations demo -->
+    <div class="datepicker-container">
+      <h3>Reservations demo</h3>
+      <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+        <label><input type="checkbox" v-model="showReservationsDemo" /> Show reservations</label>
+      </div>
+      <airbnb-style-datepicker
+        v-bind="demoPickerProps"
+        :months-to-show="2"
+        :date-one="inlineDateOne"
+        :theme="demoTheme"
+        :month-names-override="currentLocale.monthNames"
+        :days-override="currentLocale.days"
+        :days-short-override="currentLocale.daysShort"
+        :reservations="showReservationsDemo ? demoReservations : []"
+        @date-one-selected="val => { inlineDateOne = val }"
+      >
+        <template #day-extra="{ day, date }">
+          <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
+        </template>
+      </airbnb-style-datepicker>
+      <div v-if="showReservationsDemo" style="margin-top:12px;">
+        <h4>Bookings</h4>
+        <ul style="list-style:none; padding:0; margin:6px 0 0;">
+          <li v-for="(r, i) in demoReservations" :key="i" style="display:flex; gap:10px; align-items:center; padding:6px 0;">
+            <span v-if="r.color" :style="{ width: '18px', height: '12px', background: r.color, display: 'inline-block', borderRadius: '3px', border: '1px solid rgba(0,0,0,0.08)' }"></span>
+            <span style="font-size:0.95em">{{ r.start }} — {{ r.end }} <small style="color:#666;">{{ r.color ? r.color : '(auto color)' }}</small></span>
+          </li>
+        </ul>
       </div>
     </div>
     </div> <!-- .demo-wrap -->
@@ -329,10 +353,19 @@ export default {
       ],
       // demo-only flags
       demoContainerWidth: 600,
-      demoMonthWidth: 300,
-      demoAutoFitInline: true,
-      demoDayPosition: 'center',
-      demoDayExtraPosition: 'bottom',
+      // For the inline demo, initialize controls to match component defaults
+      // so the example "Inline datepicker with input" loads correctly out of the box
+      demoMonthWidth: null, // not used when auto-fit is on
+      demoAutoFitInline: true, // default is true in component
+      demoDayPosition: 'top-left', // default is 'top-left' in component
+      demoDayExtraPosition: 'bottom', // show a selected default in the UI
+      // reservations demo
+      showReservationsDemo: true,
+      demoReservations: [
+        { start: '2026-03-06', end: '2026-03-10', color: '#e67e22' },
+        { start: '2026-03-12', end: '2026-03-17' },
+        { start: '2026-03-20', end: '2026-03-20', color: '#8e44ad' },
+      ],
     }
   },
   computed: {
@@ -346,6 +379,17 @@ export default {
     },
     demoThemeLabel() {
       return this.useDark ? 'Dark theme' : 'Light theme'
+    },
+    // Only pass props to the picker when the demo controls are set
+    demoPickerProps() {
+      const p = {}
+      if (this.demoMonthWidth !== null) p.monthWidth = this.demoMonthWidth
+      if (this.demoAutoFitInline !== null) p.autoFitInline = this.demoAutoFitInline
+      if (this.demoDayPosition) p.dayNumberPosition = this.demoDayPosition
+      if (this.demoDayExtraPosition) p.dayExtraPosition = this.demoDayExtraPosition
+      // always include inline mode for the reservations demo when used
+      p.inline = true
+      return p
     },
     disabledDates() {
       // Disable a few dates within the two months currently shown (current & next month)
@@ -562,7 +606,22 @@ input {
 }
 
 /* Small decoration for custom day slot in the demo */
-.demo-day-slot { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
-.demo-day-slot .demo-star { color: #f39c12; font-size: 0.72em; line-height: 1; }
-.demo-price { color:#2c3e50; font-weight:600; font-size: 0.95em; }
+.demo-day-slot {
+  position: relative;
+  display: inline-block; /* size to content so parent flex alignment is visible */
+  width: auto;
+  height: auto;
+  padding: 0;
+  box-sizing: border-box;
+  text-align: inherit;
+}
+.demo-day-slot .demo-star {
+  color: #f39c12;
+  font-size: 0.72em;
+  line-height: 1;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.demo-price { color: inherit; font-weight:600; font-size: 0.95em; display:block; }
 </style>
