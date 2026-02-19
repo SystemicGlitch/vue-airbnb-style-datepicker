@@ -246,3 +246,85 @@ Changelog (high level)
 - Range selection improvements (backwards selection; fresh start after full range when action buttons are shown)
 - Theming API: `theme = 'light' | 'dark' | 'auto'` (default `'auto'` follows Quasar `q-dark` live) + CSS variables
 
+
+---
+
+## Locale examples
+
+This component supports localization via the plugin options (global) and per-instance overrides. The demo registers global values in `dev/index.js`; you can override per instance with the `monthNamesOverride`, `daysOverride`, and `daysShortOverride` props.
+
+Global plugin (recommended for most apps):
+
+```js
+import VueAirbnbStyleDatepicker from 'vue-airbnb-style-datepicker'
+
+app.use(VueAirbnbStyleDatepicker, {
+	monthNames: ['Jan', 'Feb', 'Mar', /* ... */],
+	days: ['Sunday', 'Monday', /* ... */],
+	daysShort: ['Su','Mo',/* ... */]
+})
+```
+
+Per-instance overrides (non-forcing):
+
+```vue
+<airbnb-style-datepicker
+	:monthNamesOverride="['Ene','Feb',... ]"
+	:daysOverride="['Dom','Lun',... ]"
+	:daysShortOverride="['Do','Lu',... ]"
+/>
+```
+
+See the demo for examples: [dev/index.js](dev/index.js#L1) and [dev/App.vue](dev/App.vue#L1).
+
+---
+
+## Troubleshooting & dev tips
+
+- If `npm run dev` fails locally, try removing `node_modules` and the lockfile then reinstalling with legacy peer deps:
+
+```bash
+cd vue-airbnb-style-datepicker
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+npm run dev
+```
+
+- If you consume this package from GitHub, the `prepare` script will build the library on `npm install` — ensure your CI or host supports building from source.
+- If you see a browser console message about an async response to a listener, that usually comes from a browser extension (not from this repo).
+
+---
+
+## Running tests
+
+This repo includes unit tests with Vitest. Run them from the project root:
+
+```bash
+npm install
+npm run test
+```
+
+See configuration in [vitest.config.ts](vitest.config.ts#L1) and example specs in [src/components/__tests__/AirbnbStyleDatepicker.spec.js](src/components/__tests__/AirbnbStyleDatepicker.spec.js#L1).
+
+---
+
+## Package metadata
+
+If you plan to publish or reference this fork as the primary source, consider updating `package.json` repository/homepage/bugs fields to point to this repo (`https://github.com/SystemicGlitch/vue-airbnb-style-datepicker`) so users can find issues and the source easily.
+
+---
+
+## Contributing
+
+- Run formatting before committing: `npm run format`.
+- Add tests for new behavior and run `npm run test`.
+- Use `master` as the default example branch in install snippets in this README if that matches your repo layout.
+
+---
+
+## Demo: non-forcing locale selector (suggestion)
+
+Add a small selector in `dev/App.vue` to switch the demo's locale by setting per-instance override props. This keeps the demo interactive without forcing language changes for consumers.
+
+---
+
