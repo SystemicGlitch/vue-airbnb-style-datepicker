@@ -1,6 +1,6 @@
 # vue-airbnb-style-datepicker (Vue 3 fork)
 
-This is a modernized fork of the original [MikaelEdebro/vue-airbnb-style-datepicker](https://github.com/MikaelEdebro/vue-airbnb-style-datepicker), updated to work smoothly with Vue 3 and a Vite-based toolchain. The source for this fork is available at https://github.com/SystemicGlitch/vue-airbnb-style-datepicker
+This is a modernized fork of the original [MikaelEdebro/vue-airbnb-style-datepicker](https://github.com/MikaelEdebro/vue-airbnb-style-datepicker), updated to work smoothly with Vue 3 and a Vite-based toolchain.
 
 Highlights
 - Vue 3 compatible (plugin install via `app.use`)
@@ -22,8 +22,8 @@ Credit: All core logic and styles are based on the original work by Mikael Edebr
 - Original Examples: https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
 - Full original documentation (GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
 
-<img src="https://raw.githubusercontent.com/SystemicGlitch/vue-airbnb-style-datepicker/master/docs/images/datepicker-tablet.gif" width="1124" alt="Datepicker on tablet">
-<img src="https://raw.githubusercontent.com/SystemicGlitch/vue-airbnb-style-datepicker/master/docs/images/datepicker-mobile.gif" width="425" alt="Datepicker on mobile">
+<img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-tablet.gif" width="1124" alt="Datepicker on tablet">
+<img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-mobile.gif" width="425" alt="Datepicker on mobile">
 
 ---
 
@@ -33,14 +33,14 @@ This package is ready to be consumed directly from a Git repo. A `prepare` scrip
 
 - Separate repo usage (recommended):
 ```bash
-npm install github:your-username/vue-airbnb-style-datepicker#main
+npm install github:SystemicGlitch/vue-airbnb-style-datepicker#main
 # or pin a tag/commit
-npm install github:your-username/vue-airbnb-style-datepicker#v2.7.0
+npm install github:SystemicGlitch/vue-airbnb-style-datepicker#v2.7.0
 ```
 
 - Monorepo subdirectory usage (npm v9+):
 ```bash
-npm install github:your-username/your-monorepo#main:vue-airbnb-style-datepicker
+npm install github:SystemicGlitch/your-monorepo#main:vue-airbnb-style-datepicker
 ```
 
 Peer dependencies (must be present in your app):
