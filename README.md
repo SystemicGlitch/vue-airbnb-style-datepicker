@@ -22,8 +22,9 @@ Credit: All core logic and styles are based on the original work by Mikael Edebr
 
 - New demo-like examples (copy of the demo page): [docs/examples.html](docs/examples.html)
 - Screenshots from the demo:
-	- Reservations highlighting and tooltips: ![Reservations](docs/reservations.png)
-	- Three months inline layout: ![Months to show](docs/monthstoshow.png)
+
+<img src="https://github.com/SystemicGlitch/vue-airbnb-style-datepicker/blob/master/docs/images/reservations.png" width="1124" alt="Reservations highlighting and tooltips">
+<img src="https://github.com/SystemicGlitch/vue-airbnb-style-datepicker/blob/master/docs/images/monthstoshow.png" width="1124" alt="Three months inline layout">
 
 - Original Examples (legacy): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
 - Full original documentation (legacy GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
