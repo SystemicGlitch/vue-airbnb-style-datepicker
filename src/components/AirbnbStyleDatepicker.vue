@@ -5,7 +5,7 @@
       ref="wrapper"
       class="asd__wrapper"
       v-show="showDatepicker"
-      :data-theme="theme === 'dark' ? 'dark' : null"
+      :data-theme="dataTheme"
       :class="wrapperClasses"
       :style="showFullscreen ? undefined : wrapperStyles"
       v-click-outside="handleClickOutside"
@@ -265,8 +265,12 @@ export default {
     },
     trigger: { type: Boolean, default: false },
     closeAfterSelect: { type: Boolean, default: false },
-    // Optional theme selector: 'light' (default) or 'dark'
-    theme: { type: String, default: undefined },
+    // Theming: 'light' | 'dark' | 'auto' (auto follows app's dark mode, e.g. Quasar q-dark)
+    theme: {
+      type: String,
+      default: 'auto',
+      validator: v => ['light', 'dark', 'auto', undefined].includes(v),
+    },
   },
   data() {
     return {
@@ -373,9 +377,14 @@ export default {
       isMobile: undefined,
       isTablet: undefined,
       triggerElement: undefined,
+      isDark: false,
+      _darkMo: null,
     }
   },
   computed: {
+    dataTheme() {
+      return this.isDark ? 'dark' : null
+    },
     wrapperClasses() {
       return {
         'asd__wrapper--datepicker-open': this.showDatepicker,
@@ -464,6 +473,19 @@ export default {
     },
   },
   watch: {
+    theme() {
+      this._applyTheme()
+      if (this.theme === 'auto' && !this._darkMo) {
+        try {
+          const target = document.body || document.documentElement
+          this._darkMo = new MutationObserver(() => this._applyTheme())
+          this._darkMo.observe(target, { attributes: true, attributeFilter: ['class'] })
+        } catch (e) {}
+      } else if (this.theme !== 'auto' && this._darkMo) {
+        try { this._darkMo.disconnect() } catch (e) {}
+        this._darkMo = null
+      }
+    },
     selectedDate1(newValue, oldValue) {
       let newDate = !newValue || newValue === '' ? '' : format(newValue, this.dateFormat)
       this.$emit('date-one-selected', newDate)
@@ -518,6 +540,17 @@ export default {
     this.viewportWidth = window.innerWidth + 'px'
     this.isMobile = window.innerWidth < 768
     this.isTablet = window.innerWidth >= 768 && window.innerWidth <= 1024
+    // Initialize theme and attach observer if needed
+    this._applyTheme()
+    if (this.theme === 'auto') {
+      try {
+        const target = document.body || document.documentElement
+        this._darkMo = new MutationObserver(() => this._applyTheme())
+        this._darkMo.observe(target, { attributes: true, attributeFilter: ['class'] })
+      } catch (e) {
+        // ignore
+      }
+    }
     this._handleWindowResizeEvent = debounce(() => {
       this.positionDatepicker()
       this.setStartDates()
@@ -559,6 +592,12 @@ export default {
   },
   unmounted() {
     window.removeEventListener('resize', this._handleWindowResizeEvent)
+    if (this._darkMo) {
+      try {
+        this._darkMo.disconnect()
+      } catch (e) {}
+      this._darkMo = null
+    }
     const wrapperEl = this.$refs && this.$refs.wrapper
     if (wrapperEl) {
       wrapperEl.removeEventListener('keyup', this.handleKeyboardInput)
@@ -570,6 +609,19 @@ export default {
     }
   },
   methods: {
+    _detectQuasarDark() {
+      try {
+        const el = document.body || document.documentElement
+        return !!(el && el.classList && el.classList.contains('q-dark'))
+      } catch (e) {
+        return false
+      }
+    },
+    _applyTheme() {
+      if (this.theme === 'dark') this.isDark = true
+      else if (this.theme === 'light') this.isDark = false
+      else this.isDark = this._detectQuasarDark()
+    },
     getDayStyles(date) {
       // Keep width inline; colors and borders are now driven by CSS variables and state classes
       return {
