@@ -64,43 +64,45 @@
             :style="monthWidthStyles"
           >
             <div class="asd__month-name">
-              <select
-                v-if="showMonthYearSelect"
-                v-model="month.monthName"
-                class="asd__month-year-select"
-                :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0"
-                @change="updateMonth(monthIndex, month.year, $event)"
-                v-resize-select
-              >
-                <option
-                  v-for="(monthName, idx) in monthNames"
-                  :value="monthName"
-                  :disabled="isMonthDisabled(month.year, idx)"
-                  :key="`month-${monthIndex}-${monthName}`"
-                >{{ monthName }}</option>
-              </select>
-              <span v-else>{{ month.monthName }}</span>
+              <template v-if="showMonthYearSelect">
+                <select
+                  v-model="month.monthName"
+                  class="asd__month-year-select"
+                  :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0"
+                  @change="updateMonth(monthIndex, month.year, $event)"
+                  v-resize-select
+                >
+                  <option
+                    v-for="(monthName, idx) in monthNames"
+                    :value="monthName"
+                    :disabled="isMonthDisabled(month.year, idx)"
+                    :key="`month-${monthIndex}-${monthName}`"
+                  >{{ monthName }}</option>
+                </select>
 
-              <select
-                v-if="showMonthYearSelect"
-                class="asd__month-year-select"
-                :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0"
-                v-model="month.year"
-                @change="updateYear(monthIndex, month.monthNumber - 1, $event)"
-              >
-                <option
-                  v-if="years.indexOf(month.year) === -1"
-                  :value="month.year"
-                  :key="`month-${monthIndex}-${year}`"
-                  :disabled="true"
-                >{{ month.year }}</option>
-                <option
-                  v-for="year in years"
-                  :value="year"
-                  :key="`month-${monthIndex}-${year}`"
-                >{{ year }}</option>
-              </select>
-              <span v-else>{{ month.year }}</span>
+                <span aria-hidden="true">&nbsp;</span>
+
+                <select
+                  class="asd__month-year-select asd__year-select"
+                  :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0"
+                  v-model="month.year"
+                  @change="updateYear(monthIndex, month.monthNumber - 1, $event)"
+                >
+                  <option
+                    v-if="years.indexOf(month.year) === -1"
+                    :value="month.year"
+                    :key="`month-${monthIndex}-${year}`"
+                    :disabled="true"
+                  >{{ month.year }}</option>
+                  <option
+                    v-for="year in years"
+                    :value="year"
+                    :key="`month-${monthIndex}-${year}`"
+                  >{{ year }}</option>
+                </select>
+              </template>
+
+              <span v-else>{{ month.monthName }} {{ month.year }}</span>
             </div>
 
             <table class="asd__month-table" role="presentation">
@@ -298,6 +300,10 @@ export default {
       default: 'auto',
       validator: v => ['light', 'dark', 'auto', undefined].includes(v),
     },
+    // Optional overrides for localization (demo can pass English arrays)
+    monthNamesOverride: { type: Array },
+    daysOverride: { type: Array },
+    daysShortOverride: { type: Array },
   },
   data() {
     return {
@@ -857,13 +863,20 @@ export default {
         this.colors.inRangeBorder = colors.inRangeBorder || this.colors.inRangeBorder
         this.colors.disabled = colors.disabled || this.colors.disabled
       }
-      if (this.$options.monthNames && this.$options.monthNames.length === 12) {
+      // Allow prop-based overrides (higher priority) then global options
+      if (this.monthNamesOverride && this.monthNamesOverride.length === 12) {
+        this.monthNames = copyObject(this.monthNamesOverride)
+      } else if (this.$options.monthNames && this.$options.monthNames.length === 12) {
         this.monthNames = copyObject(this.$options.monthNames)
       }
-      if (this.$options.days && this.$options.days.length === 7) {
+      if (this.daysOverride && this.daysOverride.length === 7) {
+        this.days = copyObject(this.daysOverride)
+      } else if (this.$options.days && this.$options.days.length === 7) {
         this.days = copyObject(this.$options.days)
       }
-      if (this.$options.daysShort && this.$options.daysShort.length === 7) {
+      if (this.daysShortOverride && this.daysShortOverride.length === 7) {
+        this.daysShort = copyObject(this.daysShortOverride)
+      } else if (this.$options.daysShort && this.$options.daysShort.length === 7) {
         this.daysShort = copyObject(this.$options.daysShort)
       }
       if (this.$options.texts) {
@@ -1296,6 +1309,11 @@ $border: 1px solid var(--asd-day-border);
   }
   &__datepicker-header {
     position: relative;
+    /* keep header content away from the left/right month nav buttons */
+    padding: 0 72px;
+    @media (max-width: 600px) {
+      padding: 0 20px;
+    }
   }
   &__keyboard-shortcuts-trigger-wrapper {
     position: relative;
@@ -1371,7 +1389,7 @@ $border: 1px solid var(--asd-day-border);
   &__change-month-button {
     position: absolute;
     top: 12px;
-    z-index: 10;
+    z-index: 30;
     background: var(--asd-bg);
 
     &--previous {
@@ -1386,8 +1404,10 @@ $border: 1px solid var(--asd-day-border);
     > button {
       background-color: var(--asd-bg);
       border: $border;
-      border-radius: 3px;
-      padding: 4px 8px;
+      border-radius: 6px;
+      padding: 6px 8px;
+      height: 34px;
+      width: 34px;
       cursor: pointer;
 
       &:hover {
@@ -1439,25 +1459,52 @@ $border: 1px solid var(--asd-day-border);
     }
   }
   &__month-name {
-    font-size: 1.3em;
+    font-size: 1.05em;
     text-align: center;
-    margin: 0 0 30px;
-    line-height: 1.4em;
-    font-weight: bold;
+    margin: 0 0 22px;
+    line-height: 1.15em;
+    font-weight: 600;
     color: var(--asd-text);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    min-width: 0; /* allow children to shrink inside flex */
   }
   &__month-year-select {
-    &::-ms-expand {
-      display: none;
-    }
+    &::-ms-expand { display: none; }
     -webkit-appearance: none;
-    border: none;
-    background-color: inherit;
+    appearance: none;
+    display: inline-block;
+    min-width: 84px;
+    max-width: 140px;
+    padding: 6px 30px 6px 10px;
+    border: 1px solid var(--asd-day-border);
+    border-radius: 6px;
+    background-color: var(--asd-bg);
+    color: var(--asd-text);
     cursor: pointer;
-    color: blue;
-    font-size: inherit;
-    font-weight: inherit;
-    padding: 0;
+    font-size: 0.98em;
+    font-weight: 500;
+    line-height: 1;
+    position: relative;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 14px) calc(50% - 2px), calc(100% - 9px) calc(50% - 2px);
+    background-size: 6px 6px;
+    background-repeat: no-repeat;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+    }
+  }
+
+  &__year-select {
+    min-width: 64px;
+    padding: 6px 28px 6px 10px;
+    font-size: 0.95em;
   }
 
   &__day {

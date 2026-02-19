@@ -29,6 +29,7 @@
             :date-one="inputDateOne"
             :min-date="'2018-08-28'"
             :months-to-show="2"
+
             :show-action-buttons="true"
             :show-month-year-select="true"
             :theme="demoTheme"
@@ -53,6 +54,7 @@
             :mode="'single'"
             :date-one="inputSingleDateOne"
             :date-two="inputSingleDateTwo"
+
             :theme="demoTheme"
             @date-one-selected="val => { inputSingleDateOne = val }"
           />
@@ -72,6 +74,7 @@
             :min-date="'2018-04-18'"
             :fullscreen-mobile="false"
             :months-to-show="2"
+
             :trigger="trigger"
             :offset-y="10"
             :close-after-select="true"
@@ -103,6 +106,7 @@
           :fullscreen-mobile="false"
           :date-one="inlineDateOne"
           :months-to-show="inlineMonthsToShow"
+
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
           :theme="demoTheme"
@@ -124,6 +128,7 @@
           :inline="true"
           :date-one="withDisabledDatesDateOne"
           :months-to-show="2"
+
           :disabled-dates="disabledDates"
           :theme="demoTheme"
           @date-one-selected="val => { withDisabledDatesDateOne = val }"
@@ -142,6 +147,7 @@
             :date-two="callbackDateTwo"
             :fullscreen-mobile="false"
             :months-to-show="2"
+
             :offset-y="10"
             :theme="demoTheme"
             @date-one-selected="onDateOneSelected"
@@ -174,6 +180,7 @@
           :date-one="darkDateOne"
           :date-two="darkDateTwo"
           :months-to-show="2"
+
           :offset-y="10"
           :theme="demoTheme"
           :close-after-select="true"
@@ -211,9 +218,11 @@ export default {
       eventLog: [],
       useDark: false,
       inlineMonthsToShow: 2,
+      // demo-only flags
     }
   },
   computed: {
+
     demoTheme() {
       return this.useDark ? 'dark' : undefined
     },
