@@ -126,6 +126,16 @@
           <label>
             <input type="checkbox" v-model="demoAutoFitInline" /> Auto-fit inline (flex months)
           </label>
+          <label>
+            Day number position:
+            <select v-model="demoDayPosition" style="margin-left:6px;">
+              <option value="center">Center</option>
+              <option value="top-left">Top left</option>
+              <option value="top-right">Top right</option>
+              <option value="bottom-left">Bottom left</option>
+              <option value="bottom-right">Bottom right</option>
+            </select>
+          </label>
         </div>
         <input
           id="datepicker-inline-trigger"
@@ -142,6 +152,7 @@
           :months-to-show="inlineMonthsToShow"
           :month-width="demoMonthWidth"
           :auto-fit-inline="demoAutoFitInline"
+          :day-number-position="demoDayPosition"
 
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
@@ -151,7 +162,15 @@
           :days-short-override="currentLocale.daysShort"
           :key="selectedLocale"
           @date-one-selected="val => { inlineDateOne = val }"
-        />
+        >
+          <!-- Example of custom day slot: star first day of each month -->
+          <template #day="{ day, date }">
+            <div class="demo-day-slot" :title="date">
+              <span>{{ day }}</span>
+              <small v-if="date && date.endsWith('-01')" class="demo-star">★</small>
+            </div>
+          </template>
+        </airbnb-style-datepicker>
       </div>
 
       <div class="datepicker-container inline-with-input">
@@ -170,6 +189,7 @@
           :months-to-show="2"
           :month-width="demoMonthWidth"
           :auto-fit-inline="demoAutoFitInline"
+          :day-number-position="demoDayPosition"
 
           :disabled-dates="disabledDates"
           :theme="demoTheme"
@@ -295,6 +315,7 @@ export default {
       demoContainerWidth: 600,
       demoMonthWidth: 300,
       demoAutoFitInline: true,
+      demoDayPosition: 'center',
     }
   },
   computed: {
@@ -517,4 +538,8 @@ input {
     padding: 0 96px; /* default was 72px in component; give more room between nav buttons */
   }
 }
+
+/* Small decoration for custom day slot in the demo */
+.demo-day-slot { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+.demo-day-slot .demo-star { color: #f39c12; font-size: 0.72em; line-height: 1; }
 </style>

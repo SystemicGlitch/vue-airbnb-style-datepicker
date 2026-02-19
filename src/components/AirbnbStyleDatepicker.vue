@@ -135,13 +135,18 @@
                   >
                     <button
                       class="asd__day-button"
+                      :class="dayNumberPositionClass"
                       type="button"
                       v-if="dayNumber"
                       tabindex="-1"
                       :date="fullDate"
                       :disabled="isDisabled(fullDate)"
                       @click="() => { selectDate(fullDate) }"
-                    >{{ dayNumber }}</button>
+                    >
+                      <slot name="day" :date="fullDate" :day="dayNumber">
+                        {{ dayNumber }}
+                      </slot>
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -312,6 +317,13 @@ export default {
     monthNamesOverride: { type: Array },
     daysOverride: { type: Array },
     daysShortOverride: { type: Array },
+    // Day number/content positioning inside the day cell button
+    // one of: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    dayNumberPosition: {
+      type: String,
+      default: 'center',
+      validator: v => ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(v),
+    },
   },
   data() {
     return {
@@ -423,6 +435,16 @@ export default {
     }
   },
   computed: {
+    dayNumberPositionClass() {
+      const map = {
+        'center': 'asd__daypos--center',
+        'top-left': 'asd__daypos--top-left',
+        'top-right': 'asd__daypos--top-right',
+        'bottom-left': 'asd__daypos--bottom-left',
+        'bottom-right': 'asd__daypos--bottom-right',
+      }
+      return map[this.dayNumberPosition] || 'asd__daypos--center'
+    },
     monthWidthNum() {
       return typeof this.monthWidth === 'number' && !isNaN(this.monthWidth)
         ? this.monthWidth
@@ -1356,7 +1378,7 @@ $border: 1px solid var(--asd-day-border);
       flex-wrap: wrap;
       align-items: flex-start;
       justify-content: flex-start;
-      gap: 12px 16px; /* compact spacing between months */
+      gap: 2px 16px; /* compact spacing between months */
     }
     .asd__month {
       display: block; /* flex item; width comes from inline style (monthWidthStyles) */
@@ -1387,7 +1409,7 @@ $border: 1px solid var(--asd-day-border);
       flex-wrap: wrap;
       align-items: flex-start;
       justify-content: flex-start;
-      gap: 12px 16px;
+      gap: 2px 16px;
     }
     .asd__month {
       flex: 1 1 var(--asd-month-min);
@@ -1659,12 +1681,21 @@ $border: 1px solid var(--asd-day-border);
     border: none;
     cursor: pointer;
     color: inherit;
-    text-align: center;
     user-select: none;
     font-size: 15px;
     font-weight: inherit;
-    padding: 0;
+    padding: 4px; /* small padding gives room when aligning to corners */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
+  /* Positioning variants for day content inside the cell */
+  &__daypos--center { align-items: center; justify-content: center; }
+  &__daypos--top-left { align-items: flex-start; justify-content: flex-start; }
+  &__daypos--top-right { align-items: flex-start; justify-content: flex-end; }
+  &__daypos--bottom-left { align-items: flex-end; justify-content: flex-start; }
+  &__daypos--bottom-right { align-items: flex-end; justify-content: flex-end; }
 
   &__action-buttons {
     min-height: 50px;

@@ -154,6 +154,33 @@ Examples:
 	:auto-fit-inline="false" />
 ```
 
+### Customizing day content and positioning (new)
+
+- Slot: `#day` – Provides `{ day, date }` so you can replace the default content per cell.
+- Prop: `dayNumberPosition` – Controls where the day content is placed inside each cell.
+	- One of: `center` (default), `top-left`, `top-right`, `bottom-left`, `bottom-right`.
+
+Examples:
+
+```vue
+<!-- Centered numbers (default) -->
+<airbnb-style-datepicker :inline="true" />
+
+<!-- Top-left numbers -->
+<airbnb-style-datepicker :inline="true" :day-number-position="'top-left'" />
+
+<!-- Custom slot: add a star on the first of each month -->
+<airbnb-style-datepicker :inline="true">
+	<template #day="{ day, date }">
+		<div style="position:relative;display:inline-flex;align-items:center;gap:2px;">
+			<span>{{ day }}</span>
+			<small v-if="date && date.endsWith('-01')" style="color:#f39c12">★</small>
+		</div>
+	</template>
+
+</airbnb-style-datepicker>
+```
+
 Tips
 - Wrapping is handled by the inline months container; no right-side help column is reserved anymore. The help/shortcuts panel overlays on top of the calendar when opened.
 - If your container is just a few pixels short, reduce `monthWidth` slightly (e.g., 300 → 292) or keep `autoFitInline` enabled so months can flex to fit.
