@@ -297,7 +297,8 @@
         <h4>Bookings</h4>
         <ul style="list-style:none; padding:0; margin:6px 0 0;">
           <li v-for="(r, i) in demoReservations" :key="i" style="display:flex; gap:10px; align-items:center; padding:6px 0;">
-            <span v-if="r.color" :style="{ width: '18px', height: '12px', background: r.color, display: 'inline-block', borderRadius: '3px', border: '1px solid rgba(0,0,0,0.08)' }"></span>
+            <span :style="{ width: '18px', height: '12px', background: r.color || '#bbb', display: 'inline-block', borderRadius: '3px', border: '1px solid rgba(0,0,0,0.08)' }"></span>
+            <span style="font-size:0.95em; font-weight:600; min-width: 140px;">{{ r.label || 'Guest' }}</span>
             <span style="font-size:0.95em">{{ r.start }} — {{ r.end }} <small style="color:#666;">{{ r.color ? r.color : '(auto color)' }}</small></span>
           </li>
         </ul>
@@ -362,9 +363,15 @@ export default {
       // reservations demo
       showReservationsDemo: true,
       demoReservations: [
-        { start: '2026-03-06', end: '2026-03-10', color: '#e67e22' },
-        { start: '2026-03-12', end: '2026-03-17' },
-        { start: '2026-03-20', end: '2026-03-20', color: '#8e44ad' },
+        { start: '2026-03-02', end: '2026-03-04', label: 'Alice Nguyen', color: '#e67e22' },
+        { start: '2026-03-06', end: '2026-03-10', label: "Brian O'Connor" },
+        { start: '2026-03-12', end: '2026-03-17', label: 'Chen Wei' },
+        // One-night stay: check-in 20th, check-out 21st -> diagonal start on 20th and diagonal end on 21st
+        { start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', color: '#8e44ad' },
+        { start: '2026-03-24', end: '2026-03-27', label: 'Evelyn Park' },
+        { start: '2026-03-29', end: '2026-04-02', label: 'Felipe García', color: '#16a085' },
+        { start: '2026-04-05', end: '2026-04-08', label: 'Grace Kim' },
+        { start: '2026-04-10', end: '2026-04-12', label: 'Hiro Tanaka' },
       ],
     }
   },
