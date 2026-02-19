@@ -160,6 +160,9 @@ Examples:
 - Prop: `dayNumberPosition` – Controls where the day content is placed inside each cell.
 	- One of: `center` (default), `top-left`, `top-right`, `bottom-left`, `bottom-right`.
 
+- Additional slot: `#day-extra` – Adds secondary content (e.g., price, badge) without replacing the day number. Slot props `{ day, date }`.
+- Prop: `dayExtraPosition` – Controls where the extra content appears: `center` (default), `top`, `bottom`, `left`, `right`.
+
 Examples:
 
 ```vue
@@ -176,6 +179,11 @@ Examples:
 			<span>{{ day }}</span>
 			<small v-if="date && date.endsWith('-01')" style="color:#f39c12">★</small>
 		</div>
+	</template>
+
+	<!-- Extra content: price shown at bottom -->
+	<template #day-extra="{ day }">
+		<small style="font-weight:600; font-size:0.72em;">${{ Number(day) * 5 }}</small>
 	</template>
 
 </airbnb-style-datepicker>

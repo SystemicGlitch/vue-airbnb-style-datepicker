@@ -136,6 +136,16 @@
               <option value="bottom-right">Bottom right</option>
             </select>
           </label>
+          <label>
+            Extra content position:
+            <select v-model="demoDayExtraPosition" style="margin-left:6px;">
+              <option value="center">Center</option>
+              <option value="top">Top</option>
+              <option value="bottom">Bottom</option>
+              <option value="left">Left</option>
+              <option value="right">Right</option>
+            </select>
+          </label>
         </div>
         <input
           id="datepicker-inline-trigger"
@@ -153,6 +163,7 @@
           :month-width="demoMonthWidth"
           :auto-fit-inline="demoAutoFitInline"
           :day-number-position="demoDayPosition"
+          :day-extra-position="demoDayExtraPosition"
 
           :disabled-dates="['2018-04-30', '2018-05-10', '2018-12-14']"
           :customized-dates="[{ dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-03-24'], cssClass: 'booked' }, { dates: ['2019-03-21', '2019-03-22', '2019-03-23', '2019-04-24'], cssClass: 'not-available' }]"
@@ -169,6 +180,10 @@
               <span>{{ day }}</span>
               <small v-if="date && date.endsWith('-01')" class="demo-star">★</small>
             </div>
+          </template>
+          <!-- Example of additional day content: demo price -->
+          <template #day-extra="{ day, date }">
+            <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
           </template>
         </airbnb-style-datepicker>
       </div>
@@ -190,6 +205,7 @@
           :month-width="demoMonthWidth"
           :auto-fit-inline="demoAutoFitInline"
           :day-number-position="demoDayPosition"
+          :day-extra-position="demoDayExtraPosition"
 
           :disabled-dates="disabledDates"
           :theme="demoTheme"
@@ -316,6 +332,7 @@ export default {
       demoMonthWidth: 300,
       demoAutoFitInline: true,
       demoDayPosition: 'center',
+      demoDayExtraPosition: 'bottom',
     }
   },
   computed: {
@@ -364,6 +381,11 @@ export default {
     },
   },
   methods: {
+    priceFor(day) {
+      const n = Number(day)
+      if (!n || isNaN(n)) return '—'
+      return (n * 5).toFixed(0)
+    },
     formatDates(dateOne, dateTwo) {
       let formattedDates = ''
       if (dateOne) {
@@ -542,4 +564,5 @@ input {
 /* Small decoration for custom day slot in the demo */
 .demo-day-slot { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
 .demo-day-slot .demo-star { color: #f39c12; font-size: 0.72em; line-height: 1; }
+.demo-price { color:#2c3e50; font-weight:600; font-size: 0.95em; }
 </style>

@@ -146,6 +146,10 @@
                       <slot name="day" :date="fullDate" :day="dayNumber">
                         {{ dayNumber }}
                       </slot>
+                      <!-- Optional additional day content (e.g., price, badge) -->
+                      <div class="asd__day-extra" :class="dayExtraPositionClass">
+                        <slot name="day-extra" :date="fullDate" :day="dayNumber"></slot>
+                      </div>
                     </button>
                   </td>
                 </tr>
@@ -324,6 +328,13 @@ export default {
       default: 'center',
       validator: v => ['center', 'top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(v),
     },
+    // Additional day content (day-extra slot) positioning
+    // one of: 'center' | 'top' | 'bottom' | 'left' | 'right'
+    dayExtraPosition: {
+      type: String,
+      default: 'center',
+      validator: v => ['center', 'top', 'bottom', 'left', 'right'].includes(v),
+    },
   },
   data() {
     return {
@@ -444,6 +455,16 @@ export default {
         'bottom-right': 'asd__daypos--bottom-right',
       }
       return map[this.dayNumberPosition] || 'asd__daypos--center'
+    },
+    dayExtraPositionClass() {
+      const map = {
+        'center': 'asd__extrapos--center',
+        'top': 'asd__extrapos--top',
+        'bottom': 'asd__extrapos--bottom',
+        'left': 'asd__extrapos--left',
+        'right': 'asd__extrapos--right',
+      }
+      return map[this.dayExtraPosition] || 'asd__extrapos--center'
     },
     monthWidthNum() {
       return typeof this.monthWidth === 'number' && !isNaN(this.monthWidth)
@@ -1694,6 +1715,7 @@ $border: 1px solid var(--asd-day-border);
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative; /* anchor for additional positioned content */
   }
 
   /* Positioning variants for day content inside the cell */
@@ -1710,6 +1732,21 @@ $border: 1px solid var(--asd-day-border);
   &__daypos--bottom-right {
     font-size: 12px;
   }
+
+  /* Additional content (day-extra slot) */
+  &__day-extra {
+    position: absolute;
+    pointer-events: none; /* keep clicks for the day button */
+    color: inherit;
+    line-height: 1;
+    font-size: 13px;
+    opacity: 0.9;
+  }
+  &__extrapos--center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+  &__extrapos--top { top: 3px; left: 50%; transform: translateX(-50%); }
+  &__extrapos--bottom { bottom: 3px; left: 50%; transform: translateX(-50%); }
+  &__extrapos--left { left: 3px; top: 50%; transform: translateY(-50%); }
+  &__extrapos--right { right: 3px; top: 50%; transform: translateY(-50%); }
 
   &__action-buttons {
     min-height: 50px;
