@@ -212,9 +212,9 @@
       <div v-if="showShortcutsMenuTrigger" class="asd__keyboard-shortcuts-trigger-wrapper">
         <button
           class="asd__keyboard-shortcuts-trigger"
-          :aria-label="ariaLabels.openKeyboardShortcutsMenu"
+          :aria-label="showKeyboardShortcutsMenu ? ariaLabels.closeKeyboardShortcutsMenu : ariaLabels.openKeyboardShortcutsMenu"
           tabindex="0"
-          @click="openKeyboardShortcutsMenu"
+          @click="toggleKeyboardShortcutsMenu"
         >
           <span>?</span>
         </button>
@@ -1409,6 +1409,10 @@ export default {
     closeKeyboardShortcutsMenu() {
       this.showKeyboardShortcutsMenu = false
       this.$nextTick(() => this.setFocusedDate(this.focusedDate))
+    },
+    toggleKeyboardShortcutsMenu() {
+      if (this.showKeyboardShortcutsMenu) this.closeKeyboardShortcutsMenu()
+      else this.openKeyboardShortcutsMenu()
     },
     apply() {
       this.$emit('apply')
