@@ -341,6 +341,10 @@ export default {
     monthNamesOverride: { type: Array },
     daysOverride: { type: Array },
     daysShortOverride: { type: Array },
+    // Localize the keyboard shortcuts list (array of { symbol, label, symbolDescription })
+    keyboardShortcutsOverride: { type: Array },
+    // Localize text labels (partial object): { apply?, cancel?, keyboardShortcuts? }
+    textsOverride: { type: Object },
     // Day number/content positioning inside the day cell button
     // one of: 'center' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
     dayNumberPosition: {
@@ -609,6 +613,12 @@ export default {
       this.setupDatepicker()
     },
     daysShortOverride(newVal) {
+      this.setupDatepicker()
+    },
+    keyboardShortcutsOverride(newVal) {
+      this.setupDatepicker()
+    },
+    textsOverride(newVal) {
       this.setupDatepicker()
     },
     theme() {
@@ -1027,6 +1037,10 @@ export default {
       if (this.$options.keyboardShortcuts) {
         this.keyboardShortcuts = copyObject(this.$options.keyboardShortcuts)
       }
+      // Per-instance keyboard shortcuts override via prop
+      if (this.keyboardShortcutsOverride && Array.isArray(this.keyboardShortcutsOverride) && this.keyboardShortcutsOverride.length) {
+        this.keyboardShortcuts = copyObject(this.keyboardShortcutsOverride)
+      }
       if (this.$options.dateLabelFormat) {
         this.dateLabelFormat = copyObject(this.$options.dateLabelFormat)
       }
@@ -1063,6 +1077,14 @@ export default {
         const texts = copyObject(this.$options.texts)
         this.texts.apply = texts.apply || this.texts.apply
         this.texts.cancel = texts.cancel || this.texts.cancel
+        this.texts.keyboardShortcuts = texts.keyboardShortcuts || this.texts.keyboardShortcuts
+      }
+      // Per-instance texts override via prop
+      if (this.textsOverride && typeof this.textsOverride === 'object') {
+        const t = this.textsOverride
+        if (t.apply) this.texts.apply = t.apply
+        if (t.cancel) this.texts.cancel = t.cancel
+        if (t.keyboardShortcuts) this.texts.keyboardShortcuts = t.keyboardShortcuts
       }
     },
     setStartDates() {

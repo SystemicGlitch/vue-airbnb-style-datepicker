@@ -47,6 +47,8 @@
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
+            :keyboard-shortcuts-override="demoShortcuts"
+            :texts-override="demoTexts"
 
             :show-action-buttons="true"
             :show-month-year-select="true"
@@ -79,6 +81,8 @@
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
+            :keyboard-shortcuts-override="demoShortcuts"
+            :texts-override="demoTexts"
             @date-one-selected="val => { inputSingleDateOne = val }"
           />
         </div>
@@ -106,6 +110,8 @@
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
+            :keyboard-shortcuts-override="demoShortcuts"
+            :texts-override="demoTexts"
             @date-one-selected="val => { buttonDateOne = val }"
             @date-two-selected="val => { buttonDateTwo = val; trigger = false }"
           />
@@ -175,6 +181,8 @@
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort"
+          :keyboard-shortcuts-override="demoShortcuts"
+          :texts-override="demoTexts"
           :key="selectedLocale"
           @date-one-selected="val => { inlineDateOne = val }"
         >
@@ -210,6 +218,8 @@
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort"
+          :keyboard-shortcuts-override="demoShortcuts"
+          :texts-override="demoTexts"
           :key="selectedLocale"
           @date-one-selected="val => { withDisabledDatesDateOne = val }"
         />
@@ -233,6 +243,8 @@
             :month-names-override="currentLocale.monthNames"
             :days-override="currentLocale.days"
             :days-short-override="currentLocale.daysShort"
+            :keyboard-shortcuts-override="demoShortcuts"
+            :texts-override="demoTexts"
             :key="selectedLocale"
             @date-one-selected="onDateOneSelected"
             @date-two-selected="onDateTwoSelected"
@@ -270,6 +282,8 @@
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort"
+          :keyboard-shortcuts-override="demoShortcuts"
+          :texts-override="demoTexts"
           :key="selectedLocale"
           @date-one-selected="val => { darkDateOne = val }"
           @date-two-selected="val => { darkDateTwo = val }"
@@ -401,6 +415,37 @@ export default {
     demoThemeLabel() {
       return this.useDark ? 'Dark theme' : 'Light theme'
     },
+    // Localized help/labels used by the demo pickers
+    demoShortcuts() {
+      // Base English
+      const en = [
+        { symbol: '↵', label: 'Select the date in focus', symbolDescription: 'Enter key' },
+        { symbol: '←/→', label: 'Move backward (left) and forward (right) by one day.', symbolDescription: 'Left or right arrow keys' },
+        { symbol: '↑/↓', label: 'Move backward (up) and forward (down) by one week.', symbolDescription: 'Up or down arrow keys' },
+        { symbol: 'PgUp/PgDn', label: 'Switch months.', symbolDescription: 'PageUp and PageDown keys' },
+        { symbol: 'Home/End', label: 'Go to the first or last day of a week.', symbolDescription: 'Home or End keys' },
+        { symbol: 'Esc', label: 'Close this panel', symbolDescription: 'Escape key' },
+        { symbol: '?', label: 'Open this panel', symbolDescription: 'Question mark' },
+      ]
+      if (this.selectedLocale === 'sv') {
+        return [
+          { symbol: '↵', label: 'Välj markerat datum', symbolDescription: 'Returtangent' },
+          { symbol: '←/→', label: 'Flytta bakåt/framåt en dag.', symbolDescription: 'Vänster- eller högerpil' },
+          { symbol: '↑/↓', label: 'Flytta uppåt/nedåt en vecka.', symbolDescription: 'Upp- eller nedpil' },
+          { symbol: 'PgUp/PgDn', label: 'Byt månad.', symbolDescription: 'Page Up/Down' },
+          { symbol: 'Home/End', label: 'Gå till veckans första/sista dag.', symbolDescription: 'Home/End' },
+          { symbol: 'Esc', label: 'Stäng panelen', symbolDescription: 'Escape' },
+          { symbol: '?', label: 'Öppna panelen', symbolDescription: 'Frågetecken' },
+        ]
+      }
+      return en
+    },
+    demoTexts() {
+      if (this.selectedLocale === 'sv') {
+        return { apply: 'Använd', cancel: 'Avbryt', keyboardShortcuts: 'Tangentbordsgenvägar' }
+      }
+      return { apply: 'Apply', cancel: 'Cancel', keyboardShortcuts: 'Keyboard Shortcuts' }
+    },
     // Only pass props to the picker when the demo controls are set
     demoPickerProps() {
       const p = {}
@@ -409,6 +454,8 @@ export default {
       if (this.demoDayPosition) p.dayNumberPosition = this.demoDayPosition
       if (this.demoDayExtraPosition) p.dayExtraPosition = this.demoDayExtraPosition
       p.showOutsideDays = this.showOutsideDaysDemo
+      p.textsOverride = this.demoTexts
+      p.keyboardShortcutsOverride = this.demoShortcuts
       // always include inline mode for the reservations demo when used
       p.inline = true
       return p
