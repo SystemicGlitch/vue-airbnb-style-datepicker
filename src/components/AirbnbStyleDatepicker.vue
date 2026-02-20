@@ -1559,9 +1559,11 @@ $border: 1px solid var(--asd-day-border);
     /* Make the keyboard shortcuts panel overlay on top of the calendar instead of reserving right-side area */
     .asd__keyboard-shortcuts-menu {
       left: 0 !important;
-      right: 0;
+      right: auto;
       top: 0;
-      bottom: 0;
+      bottom: auto; /* do not stretch full height */
+      height: auto;
+      max-height: 70vh; /* fit content, but cap sensibly */
       margin: 20px; /* keep some breathing room around the overlay */
     }
   }
@@ -1622,24 +1624,28 @@ $border: 1px solid var(--asd-day-border);
     padding: 5px;
     z-index: 100;
     cursor: pointer;
+    color: var(--asd-text);
   }
   &__keyboard-shortcuts-menu {
     display: none;
     position: absolute;
     top: 0px;
-    bottom: 0px;
+    bottom: auto; /* do not force full container height */
     right: 0px;
     z-index: 200; /* above month nav arrows (z-index: 30) */
     overflow: auto;
-    background: rgb(255, 255, 255);
+    background: var(--asd-bg);
     border-width: 1px;
     border-style: solid;
-    border-color: rgb(219, 219, 219);
+    border-color: var(--asd-border-color);
     border-image: initial;
     border-radius: 2px;
     padding: 22px;
     margin: 33px;
     text-align: left;
+    height: auto; /* fit content */
+    max-height: 70vh; /* clamp when content is long */
+    color: var(--asd-text);
   }
   &__keyboard-shortcuts-title {
     font-size: 16px;
@@ -1656,7 +1662,7 @@ $border: 1px solid var(--asd-day-border);
     font-family: monospace;
     font-size: 12px;
     text-transform: uppercase;
-    background: rgb(242, 242, 242);
+    background: var(--asd-day-hover-bg);
     padding: 2px 6px;
     margin-right: 4px;
   }
