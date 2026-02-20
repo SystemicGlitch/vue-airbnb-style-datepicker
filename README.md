@@ -1,68 +1,64 @@
 # vue-airbnb-style-datepicker (Vue 3 fork)
 
-This is a modernized fork of the original [MikaelEdebro/vue-airbnb-style-datepicker](https://github.com/MikaelEdebro/vue-airbnb-style-datepicker), updated to work smoothly with Vue 3 and a Vite-based toolchain.
+A polished Vue 3 datepicker inspired by Airbnb’s calendar, updated for Vite builds and modern UX. This fork focuses on a clean API, inline layouts, theming, reservations visualization, and quality-of-life improvements.
 
-Highlights
-- Vue 3 compatible (plugin install via `app.use`)
-- Vite library build (ES/CJS/UMD) with CSS extracted to `dist/style.css`
-- click-outside close fixed for Vue 3 (`v-click-outside` directive)
-- programmatic open/close toggle fixed via the `trigger` prop watcher
-- Dev demo preserved under `dev/`
+Key features
+- Vue 3 plugin (app.use) and Vite builds (ES/CJS/UMD) with extracted CSS
+- Inline or popup modes; exact months-to-show respected in inline mode
+- Flexible inline layout: monthWidth and autoFitInline
+- Theming: light, dark, auto (auto follows global dark mode)
+- Range selection improvements (backwards selection, smooth reselect flow)
+- Reservations with colors, labels, tooltips, and group hover highlight
+- Blocked dates (disabled) support
+- Keyboard shortcuts help popup (theme-aware), toggleable, localizable
+- Per-instance localization for help lines and labels
 
-New in this fork
-- Backwards range selection (second click earlier than the first swaps start/end)
-- Theming via `theme` prop: `'light' | 'dark' | 'auto'` (default `'auto'` follows Quasar's `q-dark` live)
-- New inline layout controls: `monthWidth` (px) and `autoFitInline` (default: `true`) to keep months aligned and optionally flex to fit the container before wrapping
-
-Credit: All core logic and styles are based on the original work by Mikael Edebro (MIT). This fork focuses on compatibility, build, and small UX fixes.
-
----
-
-## Examples, screenshots, and original docs
-
-- New demo-like examples (copy of the demo page): [docs/examples.html](docs/examples.html)
-- Screenshots from the demo:
+Screenshots (from the demo)
 
 <img src="https://github.com/SystemicGlitch/vue-airbnb-style-datepicker/blob/master/docs/images/reservations.png" width="1124" alt="Reservations highlighting and tooltips">
 <img src="https://github.com/SystemicGlitch/vue-airbnb-style-datepicker/blob/master/docs/images/monthstoshow.png" width="1124" alt="Three months inline layout">
 
-- Original Examples (legacy): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
-- Full original documentation (legacy GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
+Legacy inspiration
+- Original examples (legacy): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
+- Original docs (legacy GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
 
 <img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-tablet.gif" width="1124" alt="Datepicker on tablet">
 <img src="https://raw.githubusercontent.com/MikaelEdebro/vue-airbnb-style-datepicker/master/docs/images/datepicker-mobile.gif" width="425" alt="Datepicker on mobile">
 
----
+Demo / examples
+- Local demo (Vue 3) under dev/
+- Static copy: docs/examples.html (uses local dist; run a build first)
 
-## Install (from GitHub)
-
-This package is ready to be consumed directly from a Git repo. A `prepare` script builds the library on install.
-
-- Separate repo usage (recommended):
 ```bash
-# install from the repository default branch (master)
+# install deps
+npm install
+
+# run the demo from dev/
+npm run dev
+
+# build library (ES/CJS/UMD) + demo
+npm run build
+
+# preview built demo (served from project root)
+npm run preview
+```
+
+Install (from GitHub)
+This repo is consumable directly from Git. A prepare script builds the library on install.
+
+```bash
+# default branch
 npm install github:SystemicGlitch/vue-airbnb-style-datepicker#master
+
 # or pin a tag/commit
 npm install github:SystemicGlitch/vue-airbnb-style-datepicker#v2.7.0
 ```
 
-- Monorepo subdirectory usage (npm v9+):
-```bash
-npm install github:SystemicGlitch/your-monorepo#main:vue-airbnb-style-datepicker
-```
+Peer deps
+- vue 3.x
+- date-fns 1.x (this fork keeps v1 helper APIs)
 
-Peer dependencies (must be present in your app):
-- `vue`: 3.x
-- `date-fns`: 1.x (this fork keeps v1 helper APIs)
-
-Runtime dependency (bundled as dependency here so you don’t need to add it):
-- `v-click-outside`: ^3
-
----
-
-## Quick usage
-
-Import the plugin and CSS, then register on your Vue app:
+Quick usage
 
 ```js
 // main.js / main.ts
@@ -72,365 +68,123 @@ import App from './App.vue'
 import VueAirbnbStyleDatepicker from 'vue-airbnb-style-datepicker'
 import 'vue-airbnb-style-datepicker/dist/style.css'
 
-const app = createApp(App)
-app.use(VueAirbnbStyleDatepicker)
-app.mount('#app')
+createApp(App).use(VueAirbnbStyleDatepicker).mount('#app')
 ```
-
-Use the component in your templates:
 
 ```vue
 <template>
-	<div class="datepicker-trigger">
-		<input id="datepicker-input" :value="formatted" readonly />
+  <div class="datepicker-trigger">
+    <input id="datepicker-input" :value="formatted" readonly />
 
-		<airbnb-style-datepicker
-			:trigger-element-id="'datepicker-input'"
-			:mode="'range'"
-			:date-one="dateOne"
-			:date-two="dateTwo"
-			:months-to-show="2"
-			:show-action-buttons="true"
-			@date-one-selected="v => dateOne = v"
-			@date-two-selected="v => dateTwo = v"
-		/>
-	</div>
+    <airbnb-style-datepicker
+      :trigger-element-id="'datepicker-input'"
+      :mode="'range'"
+      :date-one="dateOne"
+      :date-two="dateTwo"
+      :months-to-show="2"
+      :show-action-buttons="true"
+      @date-one-selected="v => (dateOne = v)"
+      @date-two-selected="v => (dateTwo = v)"
+    />
+  </div>
 
-	<!-- Programmatic toggle example -->
-	<button @click="isOpen = !isOpen">Toggle</button>
-	<airbnb-style-datepicker
-		:trigger-element-id="'datepicker-toggle'"
-		:trigger="isOpen"
-		:mode="'single'"
-		:date-one="singleDate"
-		@opened="isOpen = true"
-		@closed="isOpen = false"
-	/>
-	<input id="datepicker-toggle" />
+  <!-- Programmatic toggle example -->
+  <button @click="isOpen = !isOpen">Toggle</button>
+  <airbnb-style-datepicker
+    :trigger-element-id="'datepicker-toggle'"
+    :trigger="isOpen"
+    :mode="'single'"
+    :date-one="singleDate"
+    @opened="isOpen = true"
+    @closed="isOpen = false"
+  />
+  <input id="datepicker-toggle" />
 </template>
 
-<script>
+<script setup>
+import { ref, computed } from 'vue'
 import format from 'date-fns/format'
 
-export default {
-	data() {
-		return {
-			dateOne: '',
-			dateTwo: '',
-			singleDate: '',
-			isOpen: false,
-			dateFormat: 'YYYY-MM-DD',
-		}
-	},
-	computed: {
-		formatted() {
-			const { dateOne, dateTwo, dateFormat } = this
-			if (!dateOne && !dateTwo) return ''
-			const p1 = dateOne ? format(dateOne, dateFormat) : ''
-			const p2 = dateTwo ? format(dateTwo, dateFormat) : ''
-			return p2 ? `${p1} - ${p2}` : p1
-		},
-	},
-}
+const dateOne = ref('')
+const dateTwo = ref('')
+const singleDate = ref('')
+const isOpen = ref(false)
+const dateFormat = 'YYYY-MM-DD'
+const formatted = computed(() => {
+  if (!dateOne.value && !dateTwo.value) return ''
+  const p1 = dateOne.value ? format(dateOne.value, dateFormat) : ''
+  const p2 = dateTwo.value ? format(dateTwo.value, dateFormat) : ''
+  return p2 ? `${p1} - ${p2}` : p1
+})
 </script>
 ```
 
-### Reservations, blocked dates, and tooltips (new)
-
-Reservations can be visualized directly on the calendar. Pass `reservations` with optional `id`, `label`, `tooltip`, and `color`. The component emits `reservation-hovered` with `{ id, index, start, end }` so you can react in your UI (e.g., highlight a matching row).
-
-```vue
-<airbnb-style-datepicker
-	:inline="true"
-	:months-to-show="2"
-	:reservations="bookings"
-	:disabled-dates="blockedDates"
-	@reservation-hovered="onReservationHovered"
-/>
-
-<script>
-export default {
-	data(){
-		return {
-			bookings: [
-				{ id: 101, start: '2026-03-02', end: '2026-03-04', label: 'Alice Nguyen', tooltip: 'Guest: Alice Nguyen', color: '#e67e22' },
-				{ id: 104, start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', tooltip: 'One-night stay', color: '#8e44ad' },
-			],
-			blockedDates: ['2026-03-11','2026-03-18','2026-03-22'],
-			hoveredBookingId: null,
-		}
-	},
-	methods: {
-		onReservationHovered(payload){ this.hoveredBookingId = payload ? payload.id : null }
-	}
-}
-</script>
-```
-
-### Inline layout and sizing (new)
-
-This fork adds two props to control inline layout and sizing:
-
-- `monthWidth?: number` – Base width (in px) of a single month. Default is 300.
-- `autoFitInline?: boolean` – When `true` (default), months can grow to fill the row before wrapping. When `false`, months keep their fixed `monthWidth` and wrap only when there isn’t room.
-
-Examples:
+Inline layout and sizing
+- monthWidth?: number (default 300)
+- autoFitInline?: boolean (default true)
+- showOutsideDays?: boolean (default false)
 
 ```vue
-<!-- Auto-fit (default): months expand a bit to pack the row, then wrap when needed -->
-<airbnb-style-datepicker
-	:inline="true"
-	:months-to-show="2"
-	:month-width="300"
-	:auto-fit-inline="true"  />
+<!-- 2 months, auto-fit (default) -->
+<airbnb-style-datepicker :inline="true" :months-to-show="2" :month-width="300" />
 
-<!-- Fixed width: never stretch months; wrap only when container can't fit another -->
-<airbnb-style-datepicker
-	:inline="true"
-	:months-to-show="3"
-	:month-width="320"
-	:auto-fit-inline="false" />
+<!-- 3 fixed-width months (wrap if not enough room) -->
+<airbnb-style-datepicker :inline="true" :months-to-show="3" :month-width="300" :auto-fit-inline="false" />
 
-Outside-month days
-- Control visibility of previous/next month days with the prop `showOutsideDays` (default: `false`).
-```vue
+<!-- Show previous/next month days (muted) -->
 <airbnb-style-datepicker :inline="true" :months-to-show="2" :show-outside-days="true" />
 ```
-```
 
-### Customizing day content and positioning (new)
-
-- Slot: `#day` – Provides `{ day, date }` so you can replace the default content per cell.
-- Prop: `dayNumberPosition` – Controls where the day content is placed inside each cell.
-	- One of: `center` (default), `top-left`, `top-right`, `bottom-left`, `bottom-right`.
-
-- Additional slot: `#day-extra` – Adds secondary content (e.g., price, badge) without replacing the day number. Slot props `{ day, date }`.
-- Prop: `dayExtraPosition` – Controls where the extra content appears: `center` (default), `top`, `bottom`, `left`, `right`.
-
-Examples:
-
-```vue
-<!-- Centered numbers (default) -->
-<airbnb-style-datepicker :inline="true" />
-
-<!-- Top-left numbers -->
-<airbnb-style-datepicker :inline="true" :day-number-position="'top-left'" />
-
-<!-- Custom slot: add a star on the first of each month -->
-<airbnb-style-datepicker :inline="true">
-	<template #day="{ day, date }">
-		<div style="position:relative;display:inline-flex;align-items:center;gap:2px;">
-			<span>{{ day }}</span>
-			<small v-if="date && date.endsWith('-01')" style="color:#f39c12">★</small>
-		</div>
-	</template>
-
-	<!-- Extra content: price shown at bottom -->
-	<template #day-extra="{ day }">
-		<small style="font-weight:600; font-size:0.72em;">${{ Number(day) * 5 }}</small>
-	</template>
-
-</airbnb-style-datepicker>
-```
-
-Tips
-- Wrapping is handled by the inline months container; no right-side help column is reserved anymore. The help/shortcuts panel overlays on top of the calendar when opened.
-- If your container is just a few pixels short, reduce `monthWidth` slightly (e.g., 300 → 292) or keep `autoFitInline` enabled so months can flex to fit.
-
-### Theming: light, dark, auto
-
-This fork provides a simple theming API driven by CSS variables and a `theme` prop.
-
-- `auto` (default): Follows Quasar’s global dark mode by observing `.q-dark` or `.body--dark` on `html`/`body` and updates live without remounts.
-- `dark`: Forces the dark palette for that instance.
-- `light`: Forces the light palette for that instance.
-
-Examples
-
-```vue
-<template>
-	<!-- Auto (default) – follows Quasar q-dark live -->
-	<airbnb-style-datepicker :trigger-element-id="'auto-trigger'" />
-
-	<!-- Explicit auto (equivalent to default) -->
-	<airbnb-style-datepicker :trigger-element-id="'auto2-trigger'" :theme="'auto'" />
-
-	<!-- Force dark -->
-	<airbnb-style-datepicker :trigger-element-id="'dark-trigger'" :theme="'dark'" />
-
-	<!-- Force light -->
-	<airbnb-style-datepicker :trigger-element-id="'light-trigger'" :theme="'light'" />
-</template>
-```
-
-Under the hood the component sets `data-theme` on its wrapper and uses CSS variables for colors. To fine‑tune colors, override the variables in your global CSS:
-
-```css
-/* Optional: tweak dark palette */
-.asd__wrapper[data-theme='dark']{
-	--asd-bg: #1f1f1f;
-	--asd-text: #f0f0f0;
-	--asd-selected: #1db9aa;
-	--asd-selected-text: #0b0b0b;
-	--asd-in-range: #155e67;
-	--asd-in-range-border: #2db9c8;
-	--asd-hovered-in-range: #197f8b;
-	--asd-disabled: #2a2a2a;
-	--asd-border-color: rgba(255,255,255,.2);
-	--asd-day-hover-bg: #2d2d2d;
-	--asd-day-border: #3a3a3a;
-}
-```
-
-Notes
-- `trigger-element-id` must match an element that exists when the component mounts.
-- In programmatic scenarios, keep your boolean in sync via `@opened`/`@closed`.
-- When `inline` is `true`, the picker is always visible (outside-click close is disabled by design).
-- Keyboard shortcuts/help panel: click the `?` chevron to open. The panel overlays above the calendar (higher z-index than the month nav arrows).
-- With Quasar, `theme="auto"` follows `q-dark` (v2+) or `body--dark` (v1) instantly; no remounts or manual syncing needed. If your app uses a different global dark class, you can control per‑instance explicitly via `theme`.
-
----
-
-## Dev / Demo
-
-This repo includes a small demo under `dev/`.
-
-```bash
-# install deps
-npm install
-
-# run the demo (served from dev/)
-npm run dev
-
-# build library (ES/CJS/UMD) and demo
-npm run build
-
-# preview the built demo (served from the project root)
-npm run preview
-```
-
-Build outputs (library)
-- `dist/vue-airbnb-style-datepicker.es.js` (module)
-- `dist/vue-airbnb-style-datepicker.cjs.js` (commonjs)
-- `dist/vue-airbnb-style-datepicker.js` (UMD)
-- `dist/style.css`
-
----
-
-## Formatting
-
-This project uses Prettier v3.
-
-```bash
-npm run format       # apply formatting
-npm run format:check # check formatting only
-```
-
----
-
-## Browser support (from original project)
-
-This datepicker has been tested with the following browsers/OS (from the original project notes):
-
-Chrome
-Firefox
-Edge
-Android
-IE: 9 and higher
-Safari: 7.1 and higher
-iOS: 6 and higher
-
-However, these tests were not extensive; if you plan to use this in production, please verify in the browsers you intend to support.
-
----
-
-## License & attribution
-
-MIT. Based on the original work by Mikael Edebro: https://github.com/MikaelEdebro/vue-airbnb-style-datepicker
-
-This fork updates the implementation and build tooling for Vue 3 and Vite.
-
-Changelog (high level)
-- Vue 3 compatibility and Vite builds
-- Programmatic toggle fixes and outside‑click close on Vue 3
-- Range selection improvements (backwards selection; fresh start after full range when action buttons are shown)
-- Theming API: `theme = 'light' | 'dark' | 'auto'` (default `'auto'` follows Quasar `q-dark` live) + CSS variables
-
-
----
-
-## Locale examples
-
-This component supports localization via the plugin options (global) and per-instance overrides. The demo registers global values in `dev/index.js`; you can override per instance with the `monthNamesOverride`, `daysOverride`, and `daysShortOverride` props.
-
-Global plugin (recommended for most apps):
-
-```js
-import VueAirbnbStyleDatepicker from 'vue-airbnb-style-datepicker'
-
-app.use(VueAirbnbStyleDatepicker, {
-	monthNames: ['Jan', 'Feb', 'Mar', /* ... */],
-	days: ['Sunday', 'Monday', /* ... */],
-	daysShort: ['Su','Mo',/* ... */]
-})
-```
-
-Per-instance overrides (non-forcing):
+Reservations, disabled dates, and tooltips
+- reservations: [{ id?, start, end, label?, tooltip?, color? }]
+- disabled-dates: string[] of YYYY-MM-DD
+- Emits reservation-hovered with { id, index, start, end }
 
 ```vue
 <airbnb-style-datepicker
-	:monthNamesOverride="['Ene','Feb',... ]"
-	:daysOverride="['Dom','Lun',... ]"
-	:daysShortOverride="['Do','Lu',... ]"
+  :inline="true"
+  :months-to-show="2"
+  :reservations="bookings"
+  :disabled-dates="blockedDates"
+  @reservation-hovered="onReservationHovered"
 />
 ```
 
-See the demo for examples: [dev/index.js](dev/index.js#L1) and [dev/App.vue](dev/App.vue#L1).
+Localization (help popup & labels)
+- keyboardShortcutsOverride: Array<{ symbol, label, symbolDescription }>
+- textsOverride: { apply?, cancel?, keyboardShortcuts? }
 
----
-
-## Troubleshooting & dev tips
-
-- If `npm run dev` fails locally, try removing `node_modules` and the lockfile then reinstalling with legacy peer deps:
-
-```bash
-cd vue-airbnb-style-datepicker
-rm -rf node_modules package-lock.json
-npm install --legacy-peer-deps
-npm run dev
+```vue
+<airbnb-style-datepicker
+  :inline="true"
+  :keyboard-shortcuts-override="shortcuts"
+  :texts-override="{ apply: 'Apply', cancel: 'Cancel', keyboardShortcuts: 'Keyboard Shortcuts' }"
+/>
 ```
 
-- The static HTML examples in `docs/examples.html` use the local UMD build (`dist/vue-airbnb-style-datepicker.js`) and Vue 3 from a CDN. Be sure to run a build before opening the file directly, or serve the repo with any static server so the assets load.
+Theming
+- theme: 'light' | 'dark' | 'auto' (auto follows global dark mode).
+- Colors are CSS variable-driven; you can override them globally.
 
-- If you consume this package from GitHub, the `prepare` script will build the library on `npm install` — ensure your CI or host supports building from source.
-- If you see a browser console message about an async response to a listener, that usually comes from a browser extension (not from this repo).
+Notable UX details
+- Inline mode honors :months-to-show exactly (no mobile caps).
+- “?” button toggles the help popup. Popup fits content, is scrollable, and theme-aware.
+- Day numbers can be positioned: center | top-left | top-right | bottom-left | bottom-right.
+- Extra content slot #day-extra lets you render price/badges without replacing the day number.
 
----
+Changelog (high level)
+- Vue 3 compatibility and Vite builds; extracted CSS
+- Inline layout controls: monthWidth, autoFitInline; exact months-to-show in inline
+- Range selection improvements and better reselect flow
+- Reservations rendering: colors, labels, tooltip (from reservation.tooltip)
+- Group hover highlight across reservation dates; hover-only emphasis on fill, not borders
+- New event: reservation-hovered with booking id/index
+- Disabled dates demo; more sample bookings
+- showOutsideDays prop (default false) to render adjacent month days (muted)
+- Keyboard shortcuts popup improvements: toggle button, content-fit, theme-aware
+- Localization: textsOverride and keyboardShortcutsOverride props
 
-## Running tests
+License & attribution
+- MIT. Based on the original work by Mikael Edebro. This fork modernizes the implementation for Vue 3 and Vite and adds new UX features.
 
-This repo includes unit tests with Vitest. Run them from the project root:
-
-```bash
-npm install
-npm run test
-```
-
-See configuration in [vitest.config.ts](vitest.config.ts#L1) and example specs in [src/components/__tests__/AirbnbStyleDatepicker.spec.js](src/components/__tests__/AirbnbStyleDatepicker.spec.js#L1).
-
----
-
-## Package metadata
-
-If you plan to publish or reference this fork as the primary source, consider updating `package.json` repository/homepage/bugs fields to point to this repo (`https://github.com/SystemicGlitch/vue-airbnb-style-datepicker`) so users can find issues and the source easily.
-
----
-
-## Contributing
-
-- Run formatting before committing: `npm run format`.
-- Add tests for new behavior and run `npm run test`.
-- Use `master` as the default example branch in install snippets in this README if that matches your repo layout.
-
----
 
