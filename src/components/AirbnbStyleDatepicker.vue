@@ -1300,6 +1300,11 @@ export default {
         return false
       }
 
+      // Include the currently hovered date itself so it receives the hovered styling
+      if (this.hoverDate && this.isSameDate(date, this.hoverDate)) {
+        return true
+      }
+
       return (
         (isAfter(date, this.selectedDate1) && isBefore(date, this.hoverDate)) ||
         (isAfter(date, this.hoverDate) && isBefore(date, this.selectedDate1))
