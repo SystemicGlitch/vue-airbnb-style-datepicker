@@ -9,6 +9,7 @@
       :class="wrapperClasses"
       :style="showFullscreen ? undefined : wrapperStyles"
       v-click-outside="handleClickOutside"
+      @pointerdown="handlePointerDown"
     >
       <div class="asd__mobile-header asd__mobile-only" v-if="showFullscreen">
         <button
@@ -891,6 +892,26 @@ export default {
       if (this.triggerElement && (event.target === this.triggerElement || this.triggerElement.contains(event.target))) return
       this.closeDatepicker()
     },
+
+    handlePointerDown(event) {
+      // If click/pointerdown happened inside a day element, ignore
+      if (!this.showDatepicker) return
+      const target = event.target
+      if (target && target.closest && (target.closest('.asd__day') || target.closest('.asd__day-button'))) {
+        return
+      }
+
+      // Exit range-select mode: reset hover and set to selecting start
+      if (!this.isSelectingDate1) {
+        this.isSelectingDate1 = true
+      }
+      this.hoverDate = ''
+
+      // If a start date was selected but no end date yet, clear the tentative start selection
+      if (this.selectedDate1 && !this.selectedDate2) {
+        this.selectedDate1 = ''
+      }
+    },
     shouldHandleInput(event, key) {
       return (
         event.keyCode === key && (!event.shiftKey || event.keyCode === 191) && this.showDatepicker
@@ -1296,7 +1317,7 @@ export default {
       )
     },
     isHoveredInRange(date) {
-      if (this.isSingleMode || this.allDatesSelected) {
+      if (this.isSingleMode || this.allDatesSelected || this.isSelectingDate1) {
         return false
       }
 
