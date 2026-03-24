@@ -138,7 +138,9 @@ Inline layout and sizing
 Reservations, disabled dates, and tooltips
 - reservations: [{ id?, start, end, label?, tooltip?, color? }]
 - disabled-dates: string[] of YYYY-MM-DD
-- Emits reservation-hovered with { id, index, start, end }
+- Emits:
+  - reservation-hovered: payload { id, index, start, end }
+  - reservation-clicked: payload { id, start, end, label?, color? }
 
 ```vue
 <airbnb-style-datepicker
@@ -147,8 +149,48 @@ Reservations, disabled dates, and tooltips
   :reservations="bookings"
   :disabled-dates="blockedDates"
   @reservation-hovered="onReservationHovered"
+  @reservation-clicked="onReservationClicked"
 />
 ```
+
+Floating reservation badges (slot)
+- By default, a single floating chip is rendered per reservation (centered or start-aligned).
+- Customize the badge via the `#reservation-floating` slot. Slot scope exposes `reservation`.
+- Placement controls:
+  - `reservationBadgePlacement`: 'center' | 'start-inside' | 'start-edge' (default 'center')
+  - `reservationBadgeCenterMode`: 'row' | 'full' (default 'row')
+  - `reservationBadgeYOffset`: number px (default 7) — push down to avoid overlapping day number
+  - `reservationBadgeOffset`: number px (default 6) — small horizontal padding from start edge
+  - `reservationBadgeShadow`: CSS filter string for optional soft shadow
+  - `reservationBadgeVisible`: boolean | (reservation) => boolean — show/hide badges per item
+
+```vue
+<airbnb-style-datepicker
+  :inline="true"
+  :months-to-show="2"
+  :reservations="bookings"
+  :reservation-badge-visible="r => !r.noBadge"
+  @reservation-clicked="onReservationClicked"
+>
+  <template #reservation-floating="{ reservation }">
+    <span :style="{ background: reservation.color, color: '#fff', padding: '2px 8px', borderRadius: '10px', display: 'inline-flex', gap: '6px', alignItems: 'center' }">
+      <template v-if="reservation.avatar !== false">
+        <img :src="'https://i.pravatar.cc/20?u=' + (reservation.id || reservation.label)" width="16" height="16" style="border-radius:50%;" />
+      </template>
+      <span>{{ reservation.label }}</span>
+    </span>
+  </template>
+</airbnb-style-datepicker>
+```
+
+Events (full list)
+- date-one-selected: string 'YYYY-MM-DD' | ''
+- date-two-selected: string 'YYYY-MM-DD' | ''
+- previous-month: string[] of first-visible-month dates
+- next-month: string[] of first-visible-month dates
+- opened / closed / cancelled / apply
+- reservation-hovered: { id, index, start, end } | null (on leave)
+- reservation-clicked: { id, start, end, label?, color? }
 
 Localization (help popup & labels)
 - keyboardShortcutsOverride: Array<{ symbol, label, symbolDescription }>

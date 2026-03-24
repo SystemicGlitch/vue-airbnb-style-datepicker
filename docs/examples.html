@@ -143,6 +143,23 @@
           @date-one-selected="val => { inlineDateOne = val }"
           @reservation-hovered="onReservationHovered"
         >
+          <template #reservation-floating="{ reservation }">
+            <span :style="{
+                    background: reservation.color,
+                    color: '#fff',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '11px'
+                  }">
+              <img :src="'https://i.pravatar.cc/20?u=' + (reservation.id || reservation.label)"
+                   alt="" width="16" height="16"
+                   style="border-radius:50%; display:inline-block;" />
+              <span>{{ reservation.label }}</span>
+            </span>
+          </template>
           <template #day-extra="{ day, date }">
             <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
           </template>
@@ -174,6 +191,16 @@
           :disabled-dates="demoBlockedDates"
           @reservation-hovered="onReservationHovered"
         >
+          <template #reservation-floating="{ reservation }">
+            <span :style="{
+                    background: reservation.color,
+                    color: '#fff',
+                    padding: '1px 6px',
+                    borderRadius: (reservation.isStart && reservation.isEnd) ? '10px' : (reservation.isStart ? '10px 0 0 10px' : (reservation.isEnd ? '0 10px 10px 0' : '0')),
+                    fontSize: '11px',
+                    boxShadow: '0 0 0 1px rgba(0,0,0,0.08) inset'
+                  }">{{ reservation.label }}</span>
+          </template>
           <template #day-extra="{ day, date }">
             <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
           </template>

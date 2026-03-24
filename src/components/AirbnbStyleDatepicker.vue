@@ -1,23 +1,11 @@
 <template>
   <transition name="asd__fade">
-    <div
-      :id="wrapperId"
-      ref="wrapper"
-      class="asd__wrapper"
-      v-show="showDatepicker"
-      :data-theme="dataTheme"
-      :class="wrapperClasses"
-      :style="showFullscreen ? undefined : wrapperStyles"
-      v-click-outside="handleClickOutside"
-      @pointerdown="handlePointerDown"
-    >
+    <div :id="wrapperId" ref="wrapper" class="asd__wrapper" v-show="showDatepicker" :data-theme="dataTheme"
+      :class="wrapperClasses" :style="showFullscreen ? undefined : wrapperStyles" v-click-outside="handleClickOutside"
+      @pointerdown="handlePointerDown">
       <div class="asd__mobile-header asd__mobile-only" v-if="showFullscreen">
-        <button
-          type="button"
-          class="asd__mobile-close"
-          @click="closeDatepicker"
-          :aria-label="ariaLabels.closeDatepicker"
-        >
+        <button type="button" class="asd__mobile-close" @click="closeDatepicker"
+          :aria-label="ariaLabels.closeDatepicker">
           <slot v-if="$slots['close-icon']" name="close-icon"></slot>
           <div v-else class="asd__mobile-close-icon" aria-hidden="true">X</div>
         </button>
@@ -29,8 +17,8 @@
             <slot v-if="$slots['previous-month-icon']" name="previous-month-icon"></slot>
             <svg v-else viewBox="0 0 1000 1000">
               <path
-                d="M336.2 274.5l-210.1 210h805.4c13 0 23 10 23 23s-10 23-23 23H126.1l210.1 210.1c11 11 11 21 0 32-5 5-10 7-16 7s-11-2-16-7l-249.1-249c-11-11-11-21 0-32l249.1-249.1c21-21.1 53 10.9 32 32z"
-              ></path>
+                d="M336.2 274.5l-210.1 210h805.4c13 0 23 10 23 23s-10 23-23 23H126.1l210.1 210.1c11 11 11 21 0 32-5 5-10 7-16 7s-11-2-16-7l-249.1-249c-11-11-11-21 0-32l249.1-249.1c21-21.1 53 10.9 32 32z">
+              </path>
             </svg>
           </button>
         </div>
@@ -39,8 +27,8 @@
             <slot v-if="$slots['next-month-icon']" name="next-month-icon"></slot>
             <svg v-else viewBox="0 0 1000 1000">
               <path
-                d="M694.4 242.4l249.1 249.1c11 11 11 21 0 32L694.4 772.7c-5 5-10 7-16 7s-11-2-16-7c-11-11-11-21 0-32l210.1-210.1H67.1c-13 0-23-10-23-23s10-23 23-23h805.4L662.4 274.5c-21-21.1 11-53.1 32-32.1z"
-              ></path>
+                d="M694.4 242.4l249.1 249.1c11 11 11 21 0 32L694.4 772.7c-5 5-10 7-16 7s-11-2-16-7c-11-11-11-21 0-32l210.1-210.1H67.1c-13 0-23-10-23-23s10-23 23-23h805.4L662.4 274.5c-21-21.1 11-53.1 32-32.1z">
+              </path>
             </svg>
           </button>
         </div>
@@ -50,49 +38,26 @@
 
       <div class="asd__inner-wrapper" :style="innerStyles">
         <transition-group name="asd__list-complete" tag="div" class="asd__months-wrapper">
-          <div
-            v-for="(month, monthIndex) in months"
-            :key="month.firstDateOfMonth"
-            class="asd__month"
-            :class="{'asd__month--hidden': monthIndex === 0 || monthIndex > showMonths}"
-            :style="monthWidthStyles"
-          >
+          <div v-for="(month, monthIndex) in months" :key="month.firstDateOfMonth" class="asd__month"
+            :class="{ 'asd__month--hidden': monthIndex === 0 || monthIndex > showMonths }" :style="monthWidthStyles">
             <div class="asd__month-name">
               <template v-if="showMonthYearSelect">
-                <select
-                  v-model="month.monthName"
-                  class="asd__month-year-select"
+                <select v-model="month.monthName" class="asd__month-year-select"
                   :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0"
-                  @change="updateMonth(monthIndex, month.year, $event)"
-                  v-resize-select
-                >
-                  <option
-                    v-for="(monthName, idx) in monthNames"
-                    :value="monthName"
-                    :disabled="isMonthDisabled(month.year, idx)"
-                    :key="`month-${monthIndex}-${monthName}`"
-                  >{{ monthName }}</option>
+                  @change="updateMonth(monthIndex, month.year, $event)" v-resize-select>
+                  <option v-for="(monthName, idx) in monthNames" :value="monthName"
+                    :disabled="isMonthDisabled(month.year, idx)" :key="`month-${monthIndex}-${monthName}`">{{ monthName
+                    }}</option>
                 </select>
 
                 <span aria-hidden="true">&nbsp;</span>
 
-                <select
-                  class="asd__month-year-select asd__year-select"
-                  :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0"
-                  v-model="month.year"
-                  @change="updateYear(monthIndex, month.monthNumber - 1, $event)"
-                >
-                  <option
-                    v-if="years.indexOf(month.year) === -1"
-                    :value="month.year"
-                    :key="`month-${monthIndex}-${year}`"
-                    :disabled="true"
-                  >{{ month.year }}</option>
-                  <option
-                    v-for="year in years"
-                    :value="year"
-                    :key="`month-${monthIndex}-${year}`"
-                  >{{ year }}</option>
+                <select class="asd__month-year-select asd__year-select"
+                  :tabindex="monthIndex === 0 || monthIndex > showMonths ? -1 : 0" v-model="month.year"
+                  @change="updateYear(monthIndex, month.monthNumber - 1, $event)">
+                  <option v-if="years.indexOf(month.year) === -1" :value="month.year"
+                    :key="`month-${monthIndex}-${year}`" :disabled="true">{{ month.year }}</option>
+                  <option v-for="year in years" :value="year" :key="`month-${monthIndex}-${year}`">{{ year }}</option>
                 </select>
               </template>
 
@@ -104,20 +69,19 @@
               <thead>
                 <tr>
                   <th colspan="7" style="padding:6px 0 0; background:transparent; border:none;">
-                    <div class="asd__days-legend asd__days-legend--inline" style="display:flex; justify-content:space-between;">
-                      <div class="asd__day-title" v-for="(day, index) in daysShort" :key="index" style="flex:1; text-align:center">{{ day }}</div>
+                    <div class="asd__days-legend asd__days-legend--inline"
+                      style="display:flex; justify-content:space-between;">
+                      <div class="asd__day-title" v-for="(day, index) in daysShort" :key="index"
+                        style="flex:1; text-align:center">
+                        {{ day }}</div>
                     </div>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr class="asd__week" v-for="(week, index) in month.weeks" :key="index">
-                  <td
-                    class="asd__day"
-                    v-for="({fullDate, dayNumber, outside}, index) in week"
-                    :key="index + '_' + dayNumber"
-                    :data-date="fullDate"
-                    :ref="`date-${fullDate}`"
+                  <td class="asd__day" v-for="({ fullDate, dayNumber, outside }, index) in week"
+                    :key="index + '_' + dayNumber" :data-date="fullDate" :ref="`date-${fullDate}`"
                     :tabindex="isDateVisible(fullDate) && isSameDate(focusedDate, fullDate) ? 0 : -1"
                     :aria-label="isDateVisible(fullDate) ? getAriaLabelForDate(fullDate) : false"
                     :title="reservationFor(fullDate) ? (reservationFor(fullDate).tooltip || reservationFor(fullDate).label) : null"
@@ -133,38 +97,31 @@
                       'asd__day--hovered': isHoveredInRange(fullDate),
                       'asd__selected-date-one': fullDate && fullDate === selectedDate1,
                       'asd__selected-date-two': fullDate && fullDate === selectedDate2,
-                    }, customizedDateClass(fullDate)]"
-                    :style="getDayStyles(fullDate)"
-                    @mouseover="() => { setHoverDate(fullDate) }"
-                    @mouseleave="() => { setHoverDate('') }"
-                  >
+                    }, customizedDateClass(fullDate)]" :style="getDayStyles(fullDate)"
+                    @mouseover="() => { setHoverDate(fullDate) }" @mouseleave="() => { setHoverDate('') }">
                     <!-- Reservation/blocked overlay (behind the content)
                          Support multiple overlays on the same day (e.g., back-to-back end/start) -->
                     <template v-if="dayNumber">
-                      <div
-                        v-for="(resv, ri) in reservationsFor(fullDate)"
+                      <div v-for="(resv, ri) in reservationsFor(fullDate)"
                         :key="(resv.id != null ? resv.id : resv.idx) + '-' + resv.variant + '-' + ri"
-                        class="asd__reservation"
-                        :class="[
+                        class="asd__reservation" :class="[
                           'asd__reservation--' + resv.variant,
-                          { 'asd__reservation--hover': hoveredReservationIdx !== null,
-                            'asd__reservation--hover-match': hoveredReservationIdx !== null && resv.idx === hoveredReservationIdx }
-                        ]"
-                        :data-resv="resv.idx"
-                        :title="resv.label || undefined"
-                        :style="{ '--resv-color': resv.color }"
-                      />
+                          {
+                            'asd__reservation--hover': hoveredReservationIdx !== null,
+                            'asd__reservation--hover-match': hoveredReservationIdx !== null && resv.idx === hoveredReservationIdx
+                          }
+                        ]" :data-resv="resv.idx" :title="resv.label || undefined"
+                        :style="{ '--resv-color': resv.color }" />
                     </template>
-                    <button
-                      class="asd__day-button"
-                      :class="dayNumberPositionClass"
-                      type="button"
-                      v-if="dayNumber"
-                      tabindex="-1"
-                      :date="fullDate"
-                      :disabled="isDisabled(fullDate)"
-                      @click="() => { selectDate(fullDate) }"
-                    >
+                    <!-- Optional reservation badge content (e.g., QBadge) provided by parent via slot -->
+                    <!-- Per-day reservation badge slot (legacy); prefer single floating slot 'reservation-floating' -->
+                    <div v-if="false && dayNumber && reservationFor(fullDate) && $slots['reservation-badge']"
+                      class="asd__reservation-badge">
+                      <slot name="reservation-badge" :reservation="reservationFor(fullDate)" :date="fullDate"></slot>
+                    </div>
+                    <button class="asd__day-button" :class="dayNumberPositionClass" type="button" v-if="dayNumber"
+                      tabindex="-1" :date="fullDate" :disabled="isDisabled(fullDate)"
+                      @click="() => { selectDate(fullDate) }">
                       <slot name="day" :date="fullDate" :day="dayNumber">
                         {{ dayNumber }}
                       </slot>
@@ -179,28 +136,34 @@
             </table>
           </div>
         </transition-group>
-        <div
-          v-if="showShortcutsMenuTrigger"
-          :class="{ 'asd__keyboard-shortcuts-menu': true, 'asd__keyboard-shortcuts-show': showKeyboardShortcutsMenu}"
-          :style="keyboardShortcutsMenuStyles"
-        >
+        <!-- Single overlay layer for once-per-reservation badges (not clipped by table cells) -->
+        <div class="asd__reservation-layer" aria-hidden="true">
+          <div v-for="pos in reservationBadgePositions"
+            :key="'rb-' + (pos.reservation.id != null ? pos.reservation.id : pos.reservationIdx)"
+            :class="['asd__reservation-floating', pos.anchorClass]"
+            :style="{ left: pos.x + 'px', top: pos.y + 'px', filter: reservationBadgeShadow || undefined }"
+            v-show="_isBadgeVisible(pos.reservation)" @click="onReservationBadgeClick(pos.reservation)">
+            <slot name="reservation-floating" :reservation="pos.reservation">
+              <!-- default presentation if no slot provided -->
+              <span class="asd__reservation-chip" :style="{ background: pos.reservation.color }">{{
+                pos.reservation.label
+                }}</span>
+            </slot>
+          </div>
+        </div>
+        <div v-if="showShortcutsMenuTrigger"
+          :class="{ 'asd__keyboard-shortcuts-menu': true, 'asd__keyboard-shortcuts-show': showKeyboardShortcutsMenu }"
+          :style="keyboardShortcutsMenuStyles">
           <div class="asd__keyboard-shortcuts-title">{{ texts.keyboardShortcuts }}</div>
-          <button
-            class="asd__keyboard-shortcuts-close"
-            ref="keyboard-shortcus-menu-close"
-            tabindex="0"
-            @click="closeKeyboardShortcutsMenu"
-            :aria-label="ariaLabels.closeKeyboardShortcutsMenu"
-          >
+          <button class="asd__keyboard-shortcuts-close" ref="keyboard-shortcus-menu-close" tabindex="0"
+            @click="closeKeyboardShortcutsMenu" :aria-label="ariaLabels.closeKeyboardShortcutsMenu">
             <slot v-if="$slots['close-shortcuts-icon']" name="close-shortcuts-icon"></slot>
             <div v-else class="asd__mobile-close-icon" aria-hidden="true">X</div>
           </button>
           <ul class="asd__keyboard-shortcuts-list">
             <li v-for="(shortcut, i) in keyboardShortcuts" :key="i">
-              <span
-                class="asd__keyboard-shortcuts-symbol"
-                :aria-label="shortcut.symbolDescription"
-              >{{ shortcut.symbol }}</span>
+              <span class="asd__keyboard-shortcuts-symbol" :aria-label="shortcut.symbolDescription">{{ shortcut.symbol
+                }}</span>
               {{ shortcut.label }}
             </li>
           </ul>
@@ -208,20 +171,13 @@
       </div>
       <div class="asd__action-buttons" v-if="mode !== 'single' && showActionButtons">
         <button @click="closeDatepickerCancel" type="button">{{ texts.cancel }}</button>
-        <button
-          ref="apply-button"
-          @click="apply"
-          :style="{color: colors.selected}"
-          type="button"
-        >{{ texts.apply }}</button>
+        <button ref="apply-button" @click="apply" :style="{ color: colors.selected }" type="button">{{ texts.apply
+          }}</button>
       </div>
       <div v-if="showShortcutsMenuTrigger" class="asd__keyboard-shortcuts-trigger-wrapper">
-        <button
-          class="asd__keyboard-shortcuts-trigger"
+        <button class="asd__keyboard-shortcuts-trigger"
           :aria-label="showKeyboardShortcutsMenu ? ariaLabels.closeKeyboardShortcutsMenu : ariaLabels.openKeyboardShortcutsMenu"
-          tabindex="0"
-          @click="toggleKeyboardShortcutsMenu"
-        >
+          tabindex="0" @click="toggleKeyboardShortcutsMenu">
           <span>?</span>
         </button>
       </div>
@@ -268,6 +224,8 @@ export default {
     'apply',
     // New: emitted when hovering a reservation date; payload is { id, index, start, end } or null on leave
     'reservation-hovered',
+    // Emitted when clicking a floating reservation badge
+    'reservation-clicked',
   ],
   directives: {
     // Local click-outside directive (Vue 3): listens on pointerdown and ignores
@@ -296,8 +254,8 @@ export default {
       unmounted(el) {
         try {
           document.removeEventListener('pointerdown', el.__asdClickOutsideHandler__)
-        } catch (e) {}
-        try { delete el.__asdClickOutsideHandler__ } catch (e) {}
+        } catch (e) { }
+        try { delete el.__asdClickOutsideHandler__ } catch (e) { }
       },
     },
     resizeSelect: ResizeSelect,
@@ -370,6 +328,37 @@ export default {
     // Reservation/blocked ranges to visualize
     // [{ start: 'YYYY-MM-DD', end: 'YYYY-MM-DD', color?: '#RRGGBB' }]
     reservations: { type: Array, default: () => [] },
+    // Placement for single floating reservation badge: 'center' | 'start-inside' | 'start-edge'
+    reservationBadgePlacement: {
+      type: String,
+      default: 'center',
+      validator: v => ['center', 'start-inside', 'start-edge'].includes(v),
+    },
+    // How to compute the center when a reservation spans multiple rows: 'row' | 'full'
+    // 'row' -> center on the first visible row segment (stable visual result)
+    // 'full' -> geometric center across all visible cells (may land between rows)
+    reservationBadgeCenterMode: {
+      type: String,
+      default: 'row',
+      validator: v => ['row', 'full'].includes(v),
+    },
+    // When centering on a row, prefer a row segment that contains at least this
+    // many consecutive visible days. If the first row only has 1 day, we'll
+    // fall back to the next row segment that meets this threshold (or the widest).
+    reservationBadgeMinCellsForRowCenter: { type: Number, default: 2 },
+    // Push the floating badge down a bit so the day number is visible (px)
+    reservationBadgeYOffset: { type: Number, default: 7 },
+    // Optional CSS filter for a soft drop shadow on the floating badge.
+    // Example: 'drop-shadow(0 2px 3px rgba(0,0,0,0.18))'
+    reservationBadgeShadow: {
+      type: String,
+      default: 'drop-shadow(0 2px 3px rgba(0,0,0,0.18))',
+    },
+    reservationBadgeOffset: { type: Number, default: 6 },
+    // Control visibility of floating badges per reservation.
+    // Boolean: show all (true) or hide all (false)
+    // Function: (reservation) => boolean; return false to hide a specific badge
+    reservationBadgeVisible: { type: [Boolean, Function], default: true },
   },
   data() {
     return {
@@ -479,6 +468,7 @@ export default {
       triggerElement: undefined,
       isDark: false,
       _darkMo: null,
+      reservationBadgePositions: [],
     }
   },
   computed: {
@@ -638,9 +628,9 @@ export default {
           this._darkMo = new MutationObserver(() => this._applyTheme())
           if (body) this._darkMo.observe(body, { attributes: true, attributeFilter: ['class'] })
           if (html) this._darkMo.observe(html, { attributes: true, attributeFilter: ['class'] })
-        } catch (e) {}
+        } catch (e) { }
       } else if (this.theme !== 'auto' && this._darkMo) {
-        try { this._darkMo.disconnect() } catch (e) {}
+        try { this._darkMo.disconnect() } catch (e) { }
         this._darkMo = null
       }
     },
@@ -685,6 +675,13 @@ export default {
           this.closeDatepicker()
         }
       }, 0)
+    },
+    reservations: {
+      handler() { this.$nextTick(() => this.updateReservationBadgePositions()) },
+      deep: true,
+    },
+    months() {
+      this.$nextTick(() => this.updateReservationBadgePositions())
     },
   },
   created() {
@@ -749,13 +746,27 @@ export default {
       this.triggerElement.addEventListener('keyup', this.handleTriggerInput)
       this.triggerElement.addEventListener('click', this._handleWindowClickEvent)
     }
+
+    // Position floating badges after initial render and on resize
+    this.$nextTick(() => this.updateReservationBadgePositions())
+    this._handleBadgeResizeEvent = debounce(() => this.updateReservationBadgePositions(), 100)
+    window.addEventListener('resize', this._handleBadgeResizeEvent)
+    try {
+      const grid = this.$el.querySelector('.asd__months-wrapper')
+      if (grid && 'ResizeObserver' in window) {
+        this._gridRo = new ResizeObserver(() => this.updateReservationBadgePositions())
+        this._gridRo.observe(grid)
+      }
+    } catch (e) { }
   },
   unmounted() {
     window.removeEventListener('resize', this._handleWindowResizeEvent)
+    if (this._handleBadgeResizeEvent) window.removeEventListener('resize', this._handleBadgeResizeEvent)
+    if (this._gridRo) { try { this._gridRo.disconnect() } catch (e) { } this._gridRo = null }
     if (this._darkMo) {
       try {
         this._darkMo.disconnect()
-      } catch (e) {}
+      } catch (e) { }
       this._darkMo = null
     }
     const wrapperEl = this.$refs && this.$refs.wrapper
@@ -796,7 +807,7 @@ export default {
         }
         const m = c.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
         if (m) return { r: +m[1], g: +m[2], b: +m[3] }
-      } catch (e) {}
+      } catch (e) { }
       return null
     },
     _rgbToHex({ r, g, b }) {
@@ -857,7 +868,7 @@ export default {
           const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
           const base = r.color || this._hashColor(`${r.start}|${r.end}`)
           const color = this._adjustForContrast(base)
-          return { variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label }
+          return { variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label, start: r.start, end: r.end, isStart, isEnd }
         }
       }
       return null
@@ -876,7 +887,7 @@ export default {
           const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
           const base = r.color || this._hashColor(`${r.start}|${r.end}`)
           const color = this._adjustForContrast(base)
-          results.push({ variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label })
+          results.push({ variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label, start: r.start, end: r.end, isStart, isEnd })
         }
       }
       return results
@@ -911,6 +922,139 @@ export default {
       } else {
         return this.ariaLabels.chooseDate(dateLabel)
       }
+    },
+    // Compute screen positions for once-per-reservation floating badges
+    updateReservationBadgePositions() {
+      try {
+        const wrapper = this.$el && this.$el.querySelector && this.$el.querySelector('.asd__inner-wrapper')
+        if (!wrapper) { this.reservationBadgePositions = []; return }
+        const wrapRect = wrapper.getBoundingClientRect()
+        const results = []
+
+        const almostEqual = (a, b) => Math.abs(a - b) < 1.0
+        const addOne = (r, reservationIdx) => {
+          // Iterate dates from start to end and collect visible cell rects
+          let d = r.start
+          let guard = 0
+          let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity
+          let any = false
+          const rects = []
+          while (true && guard < 500) {
+            const ref = this.$refs[`date-${d}`]
+            const el = Array.isArray(ref) ? ref[0] : ref
+            if (el && el.getBoundingClientRect) {
+              const rect = el.getBoundingClientRect()
+              rects.push({ d, rect })
+              minL = Math.min(minL, rect.left)
+              minT = Math.min(minT, rect.top)
+              maxR = Math.max(maxR, rect.right)
+              maxB = Math.max(maxB, rect.bottom)
+              any = true
+            }
+            if (d === r.end) break
+            d = format(addDays(d, 1), this.dateFormat)
+            guard++
+          }
+          if (!any) return
+
+          // Choose first visible row segment (top-most row among collected rects)
+          // Build row groups (contiguous visible cells sharing the same row)
+          const rectsSorted = rects.slice().sort((a, b) => (a.rect.top - b.rect.top) || (a.rect.left - b.rect.left))
+          const rowGroups = []
+          for (const it of rectsSorted) {
+            const g = rowGroups[rowGroups.length - 1]
+            if (!g || !almostEqual(g[0].rect.top, it.rect.top)) rowGroups.push([it])
+            else g.push(it)
+          }
+          // Choose the first group with at least N cells; otherwise choose the widest group
+          const minCells = Math.max(1, this.reservationBadgeMinCellsForRowCenter || 2)
+          const byWidth = g => g[g.length - 1].rect.right - g[0].rect.left
+          let chosenGroup = rowGroups.find(g => g.length >= minCells) || rowGroups.slice().sort((a, b) => byWidth(b) - byWidth(a))[0] || rowGroups[0]
+          const rowRects = chosenGroup
+          const segLeft = rowRects[0].rect.left
+          const segRight = rowRects[rowRects.length - 1].rect.right
+          const startRectObj = rects.find(x => x.d === r.start) || rowRects[0]
+          const startRect = startRectObj.rect
+
+          // Compute anchor point based on placement
+          let x, y, anchorClass
+          // For center placement, vertically center across the entire reservation span
+          const fullY = (minT + maxB) / 2 - wrapRect.top
+          // Compute geometric center based on average of visible cell centers (robust across multi-row wraps)
+          const avg = arr => arr.reduce((a, b) => a + b, 0) / Math.max(1, arr.length)
+          const centersX = rects.map(x => (x.rect.left + x.rect.right) / 2)
+          const centersY = rects.map(x => (x.rect.top + x.rect.bottom) / 2)
+          const avgCenterX = avg(centersX) - wrapRect.left
+          const avgCenterY = avg(centersY) - wrapRect.top
+          const startY = (startRect.top + startRect.bottom) / 2 - wrapRect.top
+          const pad = this.reservationBadgeOffset || 6
+          if (this.reservationBadgePlacement === 'center') {
+            if (this.reservationBadgeCenterMode === 'full') {
+              x = avgCenterX
+              y = avgCenterY
+            } else { // 'row' mode: center on first visible row segment
+              const rowMidY = (rowRects[0].rect.top + rowRects[0].rect.bottom) / 2 - wrapRect.top
+              const rowMidX = (segLeft + segRight) / 2 - wrapRect.left
+              x = rowMidX
+              y = rowMidY
+            }
+            anchorClass = 'asd__badge--center'
+          } else if (this.reservationBadgePlacement === 'start-edge') {
+            x = startRect.right - wrapRect.left + pad
+            y = startY
+            anchorClass = 'asd__badge--start'
+          } else { // 'start-inside'
+            x = startRect.left - wrapRect.left + pad
+            y = startY
+            anchorClass = 'asd__badge--start'
+          }
+          // Clamp within wrapper bounds with a small margin
+          const margin = 6
+          x = Math.max(margin, Math.min((wrapRect.width - margin), x))
+
+          // Apply user-configured vertical offset so day number remains visible
+          if (this.reservationBadgeYOffset) {
+            y += Number(this.reservationBadgeYOffset) || 0
+          }
+
+          const base = r.color || this._hashColor(`${r.start}|${r.end}`)
+          const color = this._adjustForContrast(base)
+          const id = (r && r.id) != null ? r.id : reservationIdx
+          results.push({ x, y, reservationIdx, reservation: { ...r, id, color }, anchorClass })
+        }
+
+        if (Array.isArray(this.reservations)) {
+          for (let i = 0; i < this.reservations.length; i++) {
+            const r = this.reservations[i]
+            if (!r || !r.start || !r.end) continue
+            addOne(r, i)
+          }
+        }
+
+        this.reservationBadgePositions = results
+      } catch (e) {
+        // Non-fatal; skip positions if DOM not ready
+        this.reservationBadgePositions = []
+      }
+    },
+    _isBadgeVisible(reservation) {
+      try {
+        const v = this.reservationBadgeVisible
+        if (typeof v === 'function') return !!v(reservation)
+        return !!v
+      } catch (e) {
+        return true
+      }
+    },
+    onReservationBadgeClick(reservation) {
+      // Emit a click event with the reservation payload so host apps can open dialogs, etc.
+      try {
+        if (reservation && reservation.id == null && reservation.idx != null) {
+          // normalize id when none provided
+          reservation = { ...reservation, id: reservation.idx }
+        }
+      } catch (e) { }
+      this.$emit('reservation-clicked', reservation)
     },
     handleClickOutside(event) {
       // if click was inside the trigger element, ignore (so trigger toggles work)
@@ -1303,7 +1447,7 @@ export default {
       const dateElement = this.$refs[`date-${formattedDate}`]
       // handle .focus() on ie11 by adding a short timeout
       if (dateElement && dateElement.length) {
-        setTimeout(function() {
+        setTimeout(function () {
           dateElement[0].focus()
         }, 10)
       }
@@ -1514,8 +1658,8 @@ export default {
         this.showMonths = this.isMobile
           ? 1
           : this.isTablet && this.monthsToShow > 2
-          ? 2
-          : this.monthsToShow
+            ? 2
+            : this.monthsToShow
       }
 
       this.$nextTick(() => {
@@ -1554,6 +1698,7 @@ $transition-time: 0.3s;
   --asd-day-hover-bg: #e4e7e7;
   --asd-day-border: #e4e7e7;
 }
+
 /* Manual dark theme override (opt-in) */
 .asd__wrapper[data-theme='dark'] {
   --asd-bg: #1f1f1f;
@@ -1603,47 +1748,61 @@ $border: 1px solid var(--asd-day-border);
       z-index: 100;
     }
   }
+
   &__inner-wrapper {
     transition: all $transition-time ease;
     position: relative;
   }
+
   /* Inline mode: let months wrap based on container width */
   &__wrapper--inline {
     /* Allow normal wrapping semantics inside inline wrapper */
     white-space: normal;
+
     /* In inline mode, lay out the months in a flex row that wraps only when needed */
     .asd__inner-wrapper {
-      margin-left: 0; /* ensure no offset in inline mode */
+      margin-left: 0;
+      /* ensure no offset in inline mode */
     }
+
     .asd__months-wrapper {
       width: 100%;
       display: flex;
       flex-wrap: wrap;
       align-items: flex-start;
       justify-content: flex-start;
-      gap: 2px 16px; /* compact spacing between months */
+      gap: 2px 16px;
+      /* compact spacing between months */
     }
+
     .asd__month {
-      display: block; /* flex item; width comes from inline style (monthWidthStyles) */
+      display: block;
+      /* flex item; width comes from inline style (monthWidthStyles) */
       /* Do not stretch months; preserve month size and wrap only when necessary */
       flex: 0 0 auto;
     }
+
     .asd__month--hidden {
-      display: none !important; /* don't reserve space for transition buffers */
+      display: none !important;
+      /* don't reserve space for transition buffers */
       visibility: hidden;
       height: 0;
       padding: 0;
       margin: 0;
     }
+
     /* Make the keyboard shortcuts panel overlay on top of the calendar instead of reserving right-side area */
     .asd__keyboard-shortcuts-menu {
       left: 0 !important;
       right: auto;
       top: 0;
-      bottom: auto; /* do not stretch full height */
+      bottom: auto;
+      /* do not stretch full height */
       height: auto;
-      max-height: 70vh; /* fit content, but cap sensibly */
-      margin: 20px; /* keep some breathing room around the overlay */
+      max-height: 70vh;
+      /* fit content, but cap sensibly */
+      margin: 20px;
+      /* keep some breathing room around the overlay */
     }
   }
 
@@ -1656,23 +1815,28 @@ $border: 1px solid var(--asd-day-border);
       justify-content: flex-start;
       gap: 2px 16px;
     }
+
     .asd__month {
       flex: 1 1 var(--asd-month-min);
       min-width: var(--asd-month-min);
       max-width: 100%;
     }
   }
+
   &__datepicker-header {
     position: relative;
     /* keep header content away from the left/right month nav buttons */
     padding: 0 72px;
+
     @media (max-width: 600px) {
       padding: 0 20px;
     }
   }
+
   &__keyboard-shortcuts-trigger-wrapper {
     position: relative;
   }
+
   &__keyboard-shortcuts-trigger {
     background-color: transparent;
     cursor: pointer;
@@ -1691,9 +1855,11 @@ $border: 1px solid var(--asd-day-border);
       right: -28px;
     }
   }
+
   &__keyboard-shortcuts-show {
     display: block !important;
   }
+
   &__keyboard-shortcuts-close {
     background-color: transparent;
     border: none;
@@ -1705,13 +1871,16 @@ $border: 1px solid var(--asd-day-border);
     cursor: pointer;
     color: var(--asd-text);
   }
+
   &__keyboard-shortcuts-menu {
     display: none;
     position: absolute;
     top: 0px;
-    bottom: auto; /* do not force full container height */
+    bottom: auto;
+    /* do not force full container height */
     right: 0px;
-    z-index: 200; /* above month nav arrows (z-index: 30) */
+    z-index: 200;
+    /* above month nav arrows (z-index: 30) */
     overflow: auto;
     background: var(--asd-bg);
     border-width: 1px;
@@ -1722,21 +1891,26 @@ $border: 1px solid var(--asd-day-border);
     padding: 22px;
     margin: 33px;
     text-align: left;
-    height: auto; /* fit content */
-    max-height: 70vh; /* clamp when content is long */
+    height: auto;
+    /* fit content */
+    max-height: 70vh;
+    /* clamp when content is long */
     color: var(--asd-text);
   }
+
   &__keyboard-shortcuts-title {
     font-size: 16px;
     font-weight: bold;
     margin: 0px;
   }
+
   &__keyboard-shortcuts-list {
     list-style: none;
     margin: 6px 0px;
     padding: 0px;
     white-space: initial;
   }
+
   &__keyboard-shortcuts-symbol {
     font-family: monospace;
     font-size: 12px;
@@ -1745,6 +1919,7 @@ $border: 1px solid var(--asd-day-border);
     padding: 2px 6px;
     margin-right: 4px;
   }
+
   &__change-month-button {
     position: absolute;
     top: 12px;
@@ -1755,12 +1930,13 @@ $border: 1px solid var(--asd-day-border);
       left: 0;
       padding-left: 15px;
     }
+
     &--next {
       right: 0;
       padding-right: 15px;
     }
 
-    > button {
+    >button {
       background-color: var(--asd-bg);
       border: $border;
       border-radius: 6px;
@@ -1773,7 +1949,7 @@ $border: 1px solid var(--asd-day-border);
         border: 1px solid #c4c4c4;
       }
 
-      > svg {
+      >svg {
         height: 19px;
         width: 19px;
         fill: var(--asd-text);
@@ -1789,6 +1965,7 @@ $border: 1px solid var(--asd-day-border);
     left: auto;
     padding: 6px 10px 0;
   }
+
   &__day-title {
     display: inline-block;
     width: math.percentage(math.div(1, 7));
@@ -1817,7 +1994,8 @@ $border: 1px solid var(--asd-day-border);
 
   &__month {
     transition: all $transition-time ease;
-    display: inline-block; /* default (popup) uses inline-block; inline mode overrides to flex item */
+    display: inline-block;
+    /* default (popup) uses inline-block; inline mode overrides to flex item */
     padding: 15px;
 
     &--hidden {
@@ -1825,6 +2003,7 @@ $border: 1px solid var(--asd-day-border);
       visibility: hidden;
     }
   }
+
   &__month-name {
     font-size: 1.05em;
     text-align: center;
@@ -1836,10 +2015,15 @@ $border: 1px solid var(--asd-day-border);
     justify-content: center;
     align-items: center;
     gap: 6px;
-    min-width: 0; /* allow children to shrink inside flex */
+    min-width: 0;
+    /* allow children to shrink inside flex */
   }
+
   &__month-year-select {
-    &::-ms-expand { display: none; }
+    &::-ms-expand {
+      display: none;
+    }
+
     -webkit-appearance: none;
     appearance: none;
     display: inline-block;
@@ -1857,14 +2041,16 @@ $border: 1px solid var(--asd-day-border);
     position: relative;
     flex: 0 0 auto;
     box-sizing: border-box;
-    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
-    background-position: calc(100% - 14px) calc(50% - 2px), calc(100% - 9px) calc(50% - 2px);
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
     background-size: 6px 6px;
     background-repeat: no-repeat;
 
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
     }
   }
 
@@ -1881,17 +2067,22 @@ $border: 1px solid var(--asd-day-border);
     padding: 0;
     overflow: hidden;
     color: var(--asd-text);
-    position: relative; /* anchor for reservation overlays */
+    position: relative;
+
+    /* anchor for reservation overlays */
     &--enabled {
       border: $border;
+
       &:hover {
         background-color: var(--asd-day-hover-bg);
       }
+
       &:focus {
         outline: auto 5px Highlight;
         outline: auto 5px -webkit-focus-ring-color;
       }
     }
+
     &--disabled,
     &--empty {
       opacity: 0.5;
@@ -1900,43 +2091,54 @@ $border: 1px solid var(--asd-day-border);
         cursor: default;
       }
     }
+
     /* In read-only mode, keep full color/opacity even though the button is disabled */
     &--read-only {
-      &.asd__day--disabled { opacity: 1; }
+      &.asd__day--disabled {
+        opacity: 1;
+      }
     }
+
     &--empty {
       border: none;
     }
+
     /* Outside days (from previous/next month) are slightly muted by default */
     &--outside {
       opacity: 0.6;
     }
+
     /* But if an outside day is also selected/in-range/hovered, show at full strength */
     &--outside.asd__day--selected,
     &--outside.asd__day--in-range,
     &--outside.asd__day--hovered {
       opacity: 1;
     }
+
     &--disabled {
       &:hover {
         background-color: transparent;
       }
     }
+
     &--selected {
       background: var(--asd-selected) !important;
       color: var(--asd-selected-text) !important;
       border: 1px double var(--asd-selected) !important;
     }
+
     &--in-range {
       background: var(--asd-in-range) !important;
       color: var(--asd-selected-text) !important;
       border: 1px double var(--asd-in-range-border) !important;
     }
+
     &--hovered {
       background: var(--asd-hovered-in-range) !important;
       color: var(--asd-selected-text) !important;
       border: 1px double var(--asd-in-range-border) !important;
     }
+
     /* Make today's number bold regardless of position */
     &--today {
       .asd__day-button {
@@ -1944,22 +2146,45 @@ $border: 1px solid var(--asd-day-border);
       }
     }
   }
+
   /* Reservation overlay fill */
   &__reservation {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    transition: opacity 0.12s ease, filter 0.12s ease; /* only affect the fill, not borders */
+    transition: opacity 0.12s ease, filter 0.12s ease;
+    /* only affect the fill, not borders */
   }
-  &__reservation--middle { background: var(--resv-color); }
-  &__reservation--single { background: var(--resv-color); }
-  &__reservation--start { background: linear-gradient(135deg, transparent 49.5%, var(--resv-color) 50%); }
-  &__reservation--end { background: linear-gradient(135deg, var(--resv-color) 0 50%, transparent 50%); }
+
+  &__reservation--middle {
+    background: var(--resv-color);
+  }
+
+  &__reservation--single {
+    background: var(--resv-color);
+  }
+
+  &__reservation--start {
+    background: linear-gradient(135deg, transparent 49.5%, var(--resv-color) 50%);
+  }
+
+  &__reservation--end {
+    background: linear-gradient(135deg, var(--resv-color) 0 50%, transparent 50%);
+  }
+
   /* Group hover: when hovering a reserved day, dim all reservations and emphasize matching group */
-  &__reservation--hover { opacity: 0.55; filter: saturate(0.9); }
+  &__reservation--hover {
+    opacity: 0.55;
+    filter: saturate(0.9);
+  }
+
   /* Emphasize only the colored fill for the hovered reservation; avoid any extra border glow */
-  &__reservation--hover-match { opacity: 1; filter: saturate(1.05) brightness(1.03); }
+  &__reservation--hover-match {
+    opacity: 1;
+    filter: saturate(1.05) brightness(1.03);
+  }
+
   &__day-button {
     background: transparent;
     width: 100%;
@@ -1970,21 +2195,45 @@ $border: 1px solid var(--asd-day-border);
     user-select: none;
     font-size: 15px;
     font-weight: inherit;
-    padding: 4px; /* small padding gives room when aligning to corners */
+    padding: 4px;
+    /* small padding gives room when aligning to corners */
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative; /* anchor for additional positioned content */
+    position: relative;
+
+    /* anchor for additional positioned content */
     /* In read-only mode, show default cursor to signal non-interactive */
-    .asd__day--read-only & { cursor: default; }
+    .asd__day--read-only & {
+      cursor: default;
+    }
   }
 
   /* Positioning variants for day content inside the cell */
-  &__daypos--center { align-items: center; justify-content: center; }
-  &__daypos--top-left { align-items: flex-start; justify-content: flex-start; }
-  &__daypos--top-right { align-items: flex-start; justify-content: flex-end; }
-  &__daypos--bottom-left { align-items: flex-end; justify-content: flex-start; }
-  &__daypos--bottom-right { align-items: flex-end; justify-content: flex-end; }
+  &__daypos--center {
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__daypos--top-left {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  &__daypos--top-right {
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  &__daypos--bottom-left {
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  &__daypos--bottom-right {
+    align-items: flex-end;
+    justify-content: flex-end;
+  }
 
   /* Slightly smaller type when pinned to a corner */
   &__daypos--top-left,
@@ -1997,22 +2246,101 @@ $border: 1px solid var(--asd-day-border);
   /* Additional content (day-extra slot) */
   &__day-extra {
     position: absolute;
-    pointer-events: none; /* keep clicks for the day button */
+    pointer-events: none;
+    /* keep clicks for the day button */
     color: inherit;
     line-height: 1;
     font-size: 13px;
     opacity: 0.9;
   }
-  &__extrapos--center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-  &__extrapos--top { top: 3px; left: 50%; transform: translateX(-50%); }
-  &__extrapos--bottom { bottom: 3px; left: 50%; transform: translateX(-50%); }
-  &__extrapos--left { left: 3px; top: 50%; transform: translateY(-50%); }
-  &__extrapos--right { right: 3px; top: 50%; transform: translateY(-50%); }
+
+  /* Floating once-per-reservation layer */
+  &__reservation-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 2;
+    /* above overlays and cells */
+  }
+
+  &__reservation-floating {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    max-width: 90%;
+    white-space: nowrap;
+    pointer-events: auto;
+    /* allow clicking the floating badge */
+    cursor: pointer;
+  }
+
+  &__reservation-floating.asd__badge--start {
+    transform: translate(0, -50%);
+  }
+
+  &__reservation-floating.asd__badge--center {
+    transform: translate(-50%, -50%);
+  }
+
+  .asd__reservation-chip {
+    display: inline-block;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 1.1;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08) inset;
+  }
+
+  /* Optional badge container for reservation-badge slot */
+  &__reservation-badge {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    z-index: 1;
+    /* above overlay, below any focus ring */
+    max-width: 96%;
+    pointer-events: none;
+    /* keep clicks for the day button by default */
+    color: inherit;
+  }
+
+  &__extrapos--center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  &__extrapos--top {
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &__extrapos--bottom {
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &__extrapos--left {
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  &__extrapos--right {
+    right: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 
   &__action-buttons {
     min-height: 50px;
     padding-top: 10px;
     margin-bottom: 12px;
+
     button {
       color: var(--asd-text);
       display: block;
@@ -2026,10 +2354,12 @@ $border: 1px solid var(--asd-day-border);
       &:hover {
         text-decoration: underline;
       }
+
       &:nth-child(1) {
         float: left;
         left: 15px;
       }
+
       &:nth-child(2) {
         float: right;
         right: 15px;
@@ -2043,17 +2373,21 @@ $border: 1px solid var(--asd-day-border);
     padding: 15px 15px 15px 15px !important;
     text-align: center;
     height: 50px;
+
     h3 {
       font-size: 20px;
       margin: 0;
     }
   }
+
   &__mobile-only {
     display: none;
+
     @media (max-width: 600px) {
       display: block;
     }
   }
+
   &__mobile-close {
     border: none;
     position: absolute;
