@@ -158,6 +158,27 @@
           </ul>
         </div>
       </div>
+
+      <div class="datepicker-container">
+        <h3>Reservations (read-only)</h3>
+        <p style="margin:8px 0 12px; color:#555;">Dates are not selectable; useful for availability-only views.</p>
+        <airbnb-style-datepicker
+          :inline="true"
+          :months-to-show="2"
+          :selectable="false"
+          :theme="demoTheme"
+          :month-names-override="currentLocale.monthNames"
+          :days-override="currentLocale.days"
+          :days-short-override="currentLocale.daysShort"
+          :reservations="demoReservations"
+          :disabled-dates="demoBlockedDates"
+          @reservation-hovered="onReservationHovered"
+        >
+          <template #day-extra="{ day, date }">
+            <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
+          </template>
+        </airbnb-style-datepicker>
+      </div>
     </div>
 
     <!-- Vue 3 and local UMD build -->
@@ -192,6 +213,12 @@
               { id: 104, start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', tooltip: 'Guest: Day Guest', color: '#8e44ad' },
               { id: 105, start: '2026-03-24', end: '2026-03-27', label: 'Evelyn Park', tooltip: 'Guest: Evelyn Park' },
               { id: 106, start: '2026-03-29', end: '2026-04-02', label: 'Felipe García', tooltip: 'Guest: Felipe García', color: '#16a085' },
+              // Back-to-back chain in April
+              { id: 109, start: '2026-04-02', end: '2026-04-05', label: 'Back-to-Back D1', tooltip: 'Adjacent chain start', color: '#d35400' },
+              { id: 110, start: '2026-04-05', end: '2026-04-08', label: 'Back-to-Back D2', tooltip: 'Adjacent to previous' },
+              { id: 111, start: '2026-04-08', end: '2026-04-10', label: 'Back-to-Back D3', tooltip: 'Adjacent to previous', color: '#2980b9' },
+              { id: 112, start: '2026-04-10', end: '2026-04-12', label: 'Back-to-Back D4', tooltip: 'Adjacent to previous' },
+              { id: 113, start: '2026-04-12', end: '2026-04-15', label: 'Back-to-Back D5', tooltip: 'Adjacent to previous', color: '#27ae60' },
             ],
             demoBlockedDates: ['2026-03-11','2026-03-18','2026-03-22','2026-03-31','2026-04-03','2026-04-09'],
           }

@@ -325,6 +325,28 @@
         </ul>
       </div>
     </div>
+
+    <!-- Reservations read-only demo -->
+    <div class="datepicker-container">
+      <h3>Reservations (read-only)</h3>
+      <p style="margin:8px 0 12px; color:#555;">Dates are not selectable; availability visualization only.</p>
+      <airbnb-style-datepicker
+        v-bind="demoPickerProps"
+        :months-to-show="2"
+        :selectable="false"
+        :theme="demoTheme"
+        :month-names-override="currentLocale.monthNames"
+        :days-override="currentLocale.days"
+        :days-short-override="currentLocale.daysShort"
+        :reservations="demoReservations"
+        :disabled-dates="demoBlockedDates"
+        @reservation-hovered="onReservationHovered"
+      >
+        <template #day-extra="{ day, date }">
+          <small class="demo-price" :title="`Price for ${date}`">${{ priceFor(day) }}</small>
+        </template>
+      </airbnb-style-datepicker>
+    </div>
     </div> <!-- .demo-wrap -->
   </div>
 </template>
@@ -394,6 +416,10 @@ export default {
         { id: 106, start: '2026-03-29', end: '2026-04-02', label: 'Felipe García', tooltip: 'Guest: Felipe García', color: '#16a085' },
         { id: 107, start: '2026-04-05', end: '2026-04-08', label: 'Grace Kim', tooltip: 'Guest: Grace Kim' },
         { id: 108, start: '2026-04-10', end: '2026-04-12', label: 'Hiro Tanaka', tooltip: 'Guest: Hiro Tanaka' },
+        // Back-to-back chain: next starts the same day previous ends
+        { id: 109, start: '2026-04-12', end: '2026-04-15', label: 'Back-to-Back A1', tooltip: 'Adjacent to previous', color: '#d35400' },
+        { id: 110, start: '2026-04-15', end: '2026-04-18', label: 'Back-to-Back A2', tooltip: 'Adjacent to previous' },
+        { id: 111, start: '2026-04-18', end: '2026-04-20', label: 'Back-to-Back A3', tooltip: 'Adjacent to previous', color: '#2980b9' },
       ],
       // Blocked dates (disabled) example
       demoBlockedDates: [

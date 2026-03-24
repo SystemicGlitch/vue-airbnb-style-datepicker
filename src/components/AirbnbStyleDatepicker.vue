@@ -125,6 +125,7 @@
                       'asd__day--enabled': dayNumber !== 0,
                       'asd__day--empty': dayNumber === 0,
                       'asd__day--disabled': isDisabled(fullDate),
+                      'asd__day--read-only': !selectable,
                       'asd__day--outside': !!outside && dayNumber !== 0,
                       'asd__day--selected': fullDate && (selectedDate1 === fullDate || selectedDate2 === fullDate),
                       'asd__day--in-range': isInRange(fullDate),
@@ -137,19 +138,23 @@
                     @mouseover="() => { setHoverDate(fullDate) }"
                     @mouseleave="() => { setHoverDate('') }"
                   >
-                    <!-- Reservation/blocked overlay (behind the content) -->
-                    <div
-                      v-if="dayNumber && reservationFor(fullDate)"
-                      class="asd__reservation"
-                      :class="[
-                        'asd__reservation--' + reservationFor(fullDate).variant,
-                        { 'asd__reservation--hover': hoveredReservationIdx !== null,
-                          'asd__reservation--hover-match': hoveredReservationIdx !== null && reservationFor(fullDate).idx === hoveredReservationIdx }
-                      ]"
-                      :data-resv="reservationFor(fullDate).idx"
-                      :title="reservationFor(fullDate).label || undefined"
-                      :style="{ '--resv-color': reservationFor(fullDate).color }"
-                    />
+                    <!-- Reservation/blocked overlay (behind the content)
+                         Support multiple overlays on the same day (e.g., back-to-back end/start) -->
+                    <template v-if="dayNumber">
+                      <div
+                        v-for="(resv, ri) in reservationsFor(fullDate)"
+                        :key="(resv.id != null ? resv.id : resv.idx) + '-' + resv.variant + '-' + ri"
+                        class="asd__reservation"
+                        :class="[
+                          'asd__reservation--' + resv.variant,
+                          { 'asd__reservation--hover': hoveredReservationIdx !== null,
+                            'asd__reservation--hover-match': hoveredReservationIdx !== null && resv.idx === hoveredReservationIdx }
+                        ]"
+                        :data-resv="resv.idx"
+                        :title="resv.label || undefined"
+                        :style="{ '--resv-color': resv.color }"
+                      />
+                    </template>
                     <button
                       class="asd__day-button"
                       :class="dayNumberPositionClass"
@@ -318,6 +323,8 @@ export default {
     showShortcutsMenuTrigger: { type: Boolean, default: true },
     showMonthYearSelect: { type: Boolean, default: false },
     yearsForSelect: { type: Number, default: 10 },
+    // Disable all date selection entirely (read-only calendar)
+    selectable: { type: Boolean, default: true },
     // Show days from previous/next month inside the grid (faded)
     showOutsideDays: { type: Boolean, default: false },
     // When inline, allow months to flex to fill available space before wrapping
@@ -855,6 +862,25 @@ export default {
       }
       return null
     },
+    // Return all reservations that affect a given date (e.g., end of one and start of another on the same day)
+    reservationsFor(date) {
+      if (!date || !this.reservations || !this.reservations.length) return []
+      const results = []
+      for (let i = 0; i < this.reservations.length; i++) {
+        const r = this.reservations[i]
+        if (!r || !r.start || !r.end) continue
+        const inRange = (isAfter(date, r.start) || date === r.start) && (isBefore(date, r.end) || date === r.end)
+        if (inRange) {
+          const isStart = date === r.start
+          const isEnd = date === r.end
+          const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
+          const base = r.color || this._hashColor(`${r.start}|${r.end}`)
+          const color = this._adjustForContrast(base)
+          results.push({ variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label })
+        }
+      }
+      return results
+    },
     getDayStyles(date) {
       // Keep width inline; colors and borders are now driven by CSS variables and state classes
       if (this.inline && this.autoFitInline) {
@@ -1209,7 +1235,7 @@ export default {
       return weeks
     },
     selectDate(date) {
-      if (this.isBeforeMinDate(date) || this.isAfterEndDate(date) || this.isDateDisabled(date)) {
+      if (!this.selectable || this.isBeforeMinDate(date) || this.isAfterEndDate(date) || this.isDateDisabled(date)) {
         return
       }
 
@@ -1369,6 +1395,7 @@ export default {
       return customizedClasses
     },
     isDisabled(date) {
+      if (!this.selectable) return true
       return this.isDateDisabled(date) || this.isBeforeMinDate(date) || this.isAfterEndDate(date)
     },
     previousMonth() {
@@ -1873,6 +1900,10 @@ $border: 1px solid var(--asd-day-border);
         cursor: default;
       }
     }
+    /* In read-only mode, keep full color/opacity even though the button is disabled */
+    &--read-only {
+      &.asd__day--disabled { opacity: 1; }
+    }
     &--empty {
       border: none;
     }
@@ -1944,6 +1975,8 @@ $border: 1px solid var(--asd-day-border);
     align-items: center;
     justify-content: center;
     position: relative; /* anchor for additional positioned content */
+    /* In read-only mode, show default cursor to signal non-interactive */
+    .asd__day--read-only & { cursor: default; }
   }
 
   /* Positioning variants for day content inside the cell */
