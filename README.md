@@ -138,6 +138,8 @@ Inline layout and sizing
 Reservations, disabled dates, and tooltips
 - reservations: [{ id?, start, end, label?, tooltip?, color? }]
 - disabled-dates: string[] of YYYY-MM-DD
+- Reservation behavior: all days strictly inside a reservation are not selectable; the start and end days remain selectable (typical check-in/out UX).
+- Visual behavior: reservation color fill is shown on start/end days; disabled interior days keep the normal disabled appearance.
 - Emits:
   - reservation-hovered: payload { id, index, start, end }
   - reservation-clicked: payload { id, start, end, label?, color? }

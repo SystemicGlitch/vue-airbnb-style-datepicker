@@ -202,7 +202,7 @@
           @reservation-clicked="onReservationClicked">
           <template v-slot:reservation-floating="{ reservation }">
             <span :style="{
-              background: reservation.color,
+              background: reservation.badgeColor || reservation.color,
               color: '#fff',
               padding: '2px 8px',
               borderRadius: '10px',

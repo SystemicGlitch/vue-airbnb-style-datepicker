@@ -258,7 +258,7 @@ Vue.use(AirBnbStyleDatepicker, {
 
 ### Reservations visualization (out of the box)
 
-Add an array of reservations to quickly visualize booked ranges. The component handles back‑to‑back ranges (end and start on the same day), draws the correct start/end triangles, and renders a single floating badge per reservation. No app‑specific CSS is required.
+Add an array of reservations to quickly visualize booked ranges. The component handles back‑to‑back ranges (end and start on the same day), draws the correct start/end triangles, disables only interior dates (start/end stay selectable), and keeps those interior disabled dates visually neutral. No app‑specific CSS is required.
 
 ```html
 <AirbnbStyleDatepicker

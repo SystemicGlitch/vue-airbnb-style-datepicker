@@ -89,6 +89,7 @@
                       'asd__day--enabled': dayNumber !== 0,
                       'asd__day--empty': dayNumber === 0,
                       'asd__day--disabled': isDisabled(fullDate),
+                      'asd__day--has-reservation': !!reservationFor(fullDate),
                       'asd__day--read-only': !selectable,
                       'asd__day--outside': !!outside && dayNumber !== 0,
                       'asd__day--selected': fullDate && (selectedDate1 === fullDate || selectedDate2 === fullDate),
@@ -102,16 +103,17 @@
                     <!-- Reservation/blocked overlay (behind the content)
                          Support multiple overlays on the same day (e.g., back-to-back end/start) -->
                     <template v-if="dayNumber">
-                      <div v-for="(resv, ri) in reservationsFor(fullDate)"
-                        :key="(resv.id != null ? resv.id : resv.idx) + '-' + resv.variant + '-' + ri"
-                        class="asd__reservation" :class="[
+                      <template v-for="(resv, ri) in reservationOverlaysFor(fullDate)"
+                        :key="(resv.id != null ? resv.id : resv.idx) + '-' + resv.variant + '-' + ri">
+                        <div class="asd__reservation" :class="[
                           'asd__reservation--' + resv.variant,
                           {
                             'asd__reservation--hover': hoveredReservationIdx !== null,
                             'asd__reservation--hover-match': hoveredReservationIdx !== null && resv.idx === hoveredReservationIdx
                           }
                         ]" :data-resv="resv.idx" :title="resv.label || undefined"
-                        :style="{ '--resv-color': resv.color }" />
+                          :style="{ '--resv-color': resv.color }" />
+                      </template>
                     </template>
                     <!-- Optional reservation badge content (e.g., QBadge) provided by parent via slot -->
                     <!-- Per-day reservation badge slot (legacy); prefer single floating slot 'reservation-floating' -->
@@ -145,7 +147,7 @@
             v-show="_isBadgeVisible(pos.reservation)" @click="onReservationBadgeClick(pos.reservation)">
             <slot name="reservation-floating" :reservation="pos.reservation">
               <!-- default presentation if no slot provided -->
-              <span class="asd__reservation-chip" :style="{ background: pos.reservation.color }">{{
+              <span class="asd__reservation-chip" :style="{ background: pos.reservation.badgeColor || pos.reservation.color }">{{
                 pos.reservation.label
                 }}</span>
             </slot>
@@ -838,6 +840,16 @@ export default {
       }
       return color
     },
+    _lightenColor(color, amount = 0.18) {
+      const rgb = this._hexToRgb(color)
+      if (!rgb) return color
+      const a = Math.max(0, Math.min(1, amount))
+      return this._rgbToHex({
+        r: rgb.r + (255 - rgb.r) * a,
+        g: rgb.g + (255 - rgb.g) * a,
+        b: rgb.b + (255 - rgb.b) * a,
+      })
+    },
     _hashColor(key) {
       let h = 0
       for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
@@ -856,20 +868,46 @@ export default {
       else { r = c; b = x }
       return this._rgbToHex({ r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 })
     },
+    isReservationInteriorDate(date, reservation) {
+      if (!date || !reservation || !reservation.start || !reservation.end) return false
+      return isAfter(date, reservation.start) && isBefore(date, reservation.end)
+    },
+    getReservationDateInfo(date, reservation, idx) {
+      if (!date || !reservation || !reservation.start || !reservation.end) return null
+      const inRange =
+        (isAfter(date, reservation.start) || date === reservation.start) &&
+        (isBefore(date, reservation.end) || date === reservation.end)
+
+      if (!inRange) return null
+
+      const isStart = date === reservation.start
+      const isEnd = date === reservation.end
+      const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
+      const base = reservation.color || this._hashColor(`${reservation.start}|${reservation.end}`)
+      const color = this._adjustForContrast(base)
+
+      return {
+        variant,
+        color,
+        idx,
+        id: reservation.id != null ? reservation.id : idx,
+        label: reservation.label,
+        tooltip: reservation.tooltip || reservation.label,
+        start: reservation.start,
+        end: reservation.end,
+        isStart,
+        isEnd,
+      }
+    },
+    shouldRenderReservationOverlay(reservationDateInfo) {
+      return !!reservationDateInfo
+    },
     reservationFor(date) {
       if (!date || !this.reservations || !this.reservations.length) return null
       for (let i = 0; i < this.reservations.length; i++) {
         const r = this.reservations[i]
-        if (!r || !r.start || !r.end) continue
-        const inRange = (isAfter(date, r.start) || date === r.start) && (isBefore(date, r.end) || date === r.end)
-        if (inRange) {
-          const isStart = date === r.start
-          const isEnd = date === r.end
-          const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
-          const base = r.color || this._hashColor(`${r.start}|${r.end}`)
-          const color = this._adjustForContrast(base)
-          return { variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label, start: r.start, end: r.end, isStart, isEnd }
-        }
+        const reservationDateInfo = this.getReservationDateInfo(date, r, i)
+        if (reservationDateInfo) return reservationDateInfo
       }
       return null
     },
@@ -879,18 +917,24 @@ export default {
       const results = []
       for (let i = 0; i < this.reservations.length; i++) {
         const r = this.reservations[i]
-        if (!r || !r.start || !r.end) continue
-        const inRange = (isAfter(date, r.start) || date === r.start) && (isBefore(date, r.end) || date === r.end)
-        if (inRange) {
-          const isStart = date === r.start
-          const isEnd = date === r.end
-          const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
-          const base = r.color || this._hashColor(`${r.start}|${r.end}`)
-          const color = this._adjustForContrast(base)
-          results.push({ variant, color, idx: i, id: (r && r.id) != null ? r.id : i, label: r.label, tooltip: r.tooltip || r.label, start: r.start, end: r.end, isStart, isEnd })
-        }
+        const reservationDateInfo = this.getReservationDateInfo(date, r, i)
+        if (reservationDateInfo) results.push(reservationDateInfo)
       }
       return results
+    },
+    reservationOverlaysFor(date) {
+      // Keep selected ranges visually consistent, but allow reservation boundary overlays
+      // on selected start/end cells so selection only fills the non-reserved (white) half.
+      if (this.isSelected(date)) {
+        return this
+          .reservationsFor(date)
+          .filter(r => r.variant === 'start' || r.variant === 'end' || r.variant === 'single')
+          .filter(this.shouldRenderReservationOverlay)
+      }
+      if (this.isInRange(date) || this.isHoveredInRange(date)) {
+        return []
+      }
+      return this.reservationsFor(date).filter(this.shouldRenderReservationOverlay)
     },
     getDayStyles(date) {
       // Keep width inline; colors and borders are now driven by CSS variables and state classes
@@ -1020,7 +1064,8 @@ export default {
           const base = r.color || this._hashColor(`${r.start}|${r.end}`)
           const color = this._adjustForContrast(base)
           const id = (r && r.id) != null ? r.id : reservationIdx
-          results.push({ x, y, reservationIdx, reservation: { ...r, id, color }, anchorClass })
+          const badgeColor = this._lightenColor(color, 0.16)
+          results.push({ x, y, reservationIdx, reservation: { ...r, id, color, badgeColor }, anchorClass })
         }
 
         if (Array.isArray(this.reservations)) {
@@ -1056,10 +1101,23 @@ export default {
       } catch (e) { }
       this.$emit('reservation-clicked', reservation)
     },
+    clearSelectedDates() {
+      this.selectedDate1 = ''
+      this.selectedDate2 = ''
+      this.isSelectingDate1 = true
+      this.hoverDate = ''
+    },
     handleClickOutside(event) {
       // if click was inside the trigger element, ignore (so trigger toggles work)
       if (!this.showDatepicker || this.inline) return
-      if (this.triggerElement && (event.target === this.triggerElement || this.triggerElement.contains(event.target))) return
+      const triggerContainsTarget =
+        this.triggerElement &&
+        typeof this.triggerElement.contains === 'function' &&
+        this.triggerElement.contains(event.target)
+      if (this.triggerElement && (event.target === this.triggerElement || triggerContainsTarget)) return
+      if (this.selectedDate1 || this.selectedDate2) {
+        this.clearSelectedDates()
+      }
       this.closeDatepicker()
     },
 
@@ -1389,13 +1447,9 @@ export default {
         return
       }
 
-      // If a full range is already selected and the picker remains open
-      // (e.g., action buttons are shown and closeAfterSelect is false),
-      // treat the next click as starting a new range from the clicked date.
-      if (this.allDatesSelected && this.showActionButtons && !this.closeAfterSelect) {
-        this.selectedDate1 = date
-        this.selectedDate2 = ''
-        this.isSelectingDate1 = false
+      // If a full range is already selected, clear it before allowing a new selection.
+      if (this.allDatesSelected && date !== this.selectedDate1 && date !== this.selectedDate2) {
+        this.clearSelectedDates()
         return
       }
 
@@ -1422,7 +1476,7 @@ export default {
 
       if (this.showActionButtons) {
         const applyBtn = this.$refs && this.$refs['apply-button']
-        if (applyBtn && typeof applyBtn.focus === 'function') applyBtn.focus()
+        this.focusWithoutScroll(applyBtn)
       }
       if (this.allDatesSelected && this.closeAfterSelect) {
         this.closeDatepicker()
@@ -1447,8 +1501,8 @@ export default {
       const dateElement = this.$refs[`date-${formattedDate}`]
       // handle .focus() on ie11 by adding a short timeout
       if (dateElement && dateElement.length) {
-        setTimeout(function () {
-          dateElement[0].focus()
+        setTimeout(() => {
+          this.focusWithoutScroll(dateElement[0])
         }, 10)
       }
     },
@@ -1521,7 +1575,27 @@ export default {
       const end = addDays(lastDayOfMonth(this.visibleMonths[this.monthsToShow - 1]), 1)
       return isAfter(date, start) && isBefore(date, end)
     },
+    focusWithoutScroll(el) {
+      if (!el || typeof el.focus !== 'function') return
+      try {
+        el.focus({ preventScroll: true })
+      } catch (e) {
+        el.focus()
+      }
+    },
     isDateDisabled(date) {
+      // 1) Reservation defaults: disable interior dates, keep start/end selectable.
+      if (Array.isArray(this.reservations) && this.reservations.length && date) {
+        for (let i = 0; i < this.reservations.length; i++) {
+          const r = this.reservations[i]
+          if (!r || !r.start || !r.end) continue
+          if (this.isReservationInteriorDate(date, r)) {
+            return true
+          }
+        }
+      }
+
+      // 2) Respect explicit enabledDates/disabledDates lists
       if (this.enabledDates.length > 0) {
         return this.enabledDates.indexOf(date) === -1
       } else {
@@ -1620,9 +1694,7 @@ export default {
       this.showKeyboardShortcutsMenu = true
       const shortcutMenuCloseBtn = this.$refs && this.$refs['keyboard-shortcus-menu-close']
       this.$nextTick(() => {
-        if (shortcutMenuCloseBtn && typeof shortcutMenuCloseBtn.focus === 'function') {
-          shortcutMenuCloseBtn.focus()
-        }
+        this.focusWithoutScroll(shortcutMenuCloseBtn)
       })
     },
     closeKeyboardShortcutsMenu() {
@@ -2092,6 +2164,11 @@ $border: 1px solid var(--asd-day-border);
       }
     }
 
+    /* Keep booked days fully visible even when they are disabled for selection */
+    &--disabled.asd__day--has-reservation {
+      opacity: 1;
+    }
+
     /* In read-only mode, keep full color/opacity even though the button is disabled */
     &--read-only {
       &.asd__day--disabled {
@@ -2128,9 +2205,9 @@ $border: 1px solid var(--asd-day-border);
     }
 
     &--in-range {
-      background: var(--asd-in-range) !important;
+      background: var(--asd-selected) !important;
       color: var(--asd-selected-text) !important;
-      border: 1px double var(--asd-in-range-border) !important;
+      border: 1px double var(--asd-selected) !important;
     }
 
     &--hovered {
