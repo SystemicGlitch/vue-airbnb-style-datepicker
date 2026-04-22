@@ -18,7 +18,7 @@ Screenshots (from the demo)
 <img src="https://github.com/SystemicGlitch/vue-airbnb-style-datepicker/blob/master/docs/images/reservations.png" width="1124" alt="Reservations highlighting and tooltips">
 <img src="https://github.com/SystemicGlitch/vue-airbnb-style-datepicker/blob/master/docs/images/monthstoshow.png" width="1124" alt="Three months inline layout">
 
-Legacy inspiration
+Legacy inspiration -
 - Original examples (legacy): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/examples.html
 - Original docs (legacy GitBooks): https://mikaeledebro.gitbooks.io/vue-airbnb-style-datepicker/
 
