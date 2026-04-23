@@ -37,7 +37,13 @@
       </div>
 
       <div class="asd__inner-wrapper" :style="innerStyles">
-        <transition-group name="asd__list-complete" tag="div" class="asd__months-wrapper">
+        <transition-group
+          name="asd__list-complete"
+          tag="div"
+          class="asd__months-wrapper"
+          @transitionstart="onMonthsTransitionStart"
+          @transitionend="onMonthsTransitionEnd"
+        >
           <div v-for="(month, monthIndex) in months" :key="month.firstDateOfMonth" class="asd__month"
             :class="{ 'asd__month--hidden': monthIndex === 0 || monthIndex > showMonths }" :style="monthWidthStyles">
             <div class="asd__month-name">
@@ -139,7 +145,8 @@
           </div>
         </transition-group>
         <!-- Single overlay layer for once-per-reservation badges (not clipped by table cells) -->
-        <div class="asd__reservation-layer" aria-hidden="true">
+        <div class="asd__reservation-layer" :class="{ 'asd__reservation-layer--transitioning': isMonthTransitioning }"
+          aria-hidden="true">
           <div v-for="pos in reservationBadgePositions"
             :key="'rb-' + (pos.reservation.id != null ? pos.reservation.id : pos.reservationIdx)"
             :class="['asd__reservation-floating', pos.anchorClass]"
@@ -472,6 +479,9 @@ export default {
       _darkMo: null,
       reservationBadgePositions: [],
       _badgePosTimeout: null,
+      isMonthTransitioning: false,
+      _activeMonthTransitions: 0,
+      _monthTransitionFallbackTimeout: null,
     }
   },
   computed: {
@@ -767,6 +777,10 @@ export default {
     if (this._handleBadgeResizeEvent) window.removeEventListener('resize', this._handleBadgeResizeEvent)
     if (this._gridRo) { try { this._gridRo.disconnect() } catch (e) { } this._gridRo = null }
     if (this._badgePosTimeout) { clearTimeout(this._badgePosTimeout); this._badgePosTimeout = null }
+    if (this._monthTransitionFallbackTimeout) {
+      clearTimeout(this._monthTransitionFallbackTimeout)
+      this._monthTransitionFallbackTimeout = null
+    }
     if (this._darkMo) {
       try {
         this._darkMo.disconnect()
@@ -1055,15 +1069,45 @@ export default {
 
       return list[0] || null
     },
-    _scheduleReservationBadgePositionsUpdate() {
+    _scheduleReservationBadgePositionsUpdate(afterFirstPass) {
       this.$nextTick(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => this.updateReservationBadgePositions())
+          requestAnimationFrame(() => {
+            this.updateReservationBadgePositions()
+            if (typeof afterFirstPass === 'function') afterFirstPass()
+          })
         })
       })
       // Month navigation animates; run a delayed pass after transition settles.
       if (this._badgePosTimeout) clearTimeout(this._badgePosTimeout)
       this._badgePosTimeout = setTimeout(() => this.updateReservationBadgePositions(), 420)
+    },
+    _armMonthTransitionFallback() {
+      this.isMonthTransitioning = true
+      if (this._monthTransitionFallbackTimeout) clearTimeout(this._monthTransitionFallbackTimeout)
+      this._monthTransitionFallbackTimeout = setTimeout(() => {
+        this._activeMonthTransitions = 0
+        this._scheduleReservationBadgePositionsUpdate(() => {
+          this.isMonthTransitioning = false
+        })
+      }, 420)
+    },
+    onMonthsTransitionStart(event) {
+      const target = event && event.target
+      if (!target || !target.classList || !target.classList.contains('asd__month')) return
+      this._activeMonthTransitions += 1
+      this.isMonthTransitioning = true
+      if (this._monthTransitionFallbackTimeout) clearTimeout(this._monthTransitionFallbackTimeout)
+    },
+    onMonthsTransitionEnd(event) {
+      const target = event && event.target
+      if (!target || !target.classList || !target.classList.contains('asd__month')) return
+      this._activeMonthTransitions = Math.max(0, this._activeMonthTransitions - 1)
+      if (this._activeMonthTransitions === 0) {
+        this._scheduleReservationBadgePositionsUpdate(() => {
+          this.isMonthTransitioning = false
+        })
+      }
     },
     updateReservationBadgePositions() {
       try {
@@ -1718,6 +1762,7 @@ export default {
       return this.isDateDisabled(date) || this.isBeforeMinDate(date) || this.isAfterEndDate(date)
     },
     previousMonth() {
+      this._armMonthTransitionFallback()
       this.startingDate = this.subtractMonths(this.months[0].firstDateOfMonth)
 
       this.months.unshift(this.getMonth(this.startingDate))
@@ -1727,6 +1772,7 @@ export default {
       this._scheduleReservationBadgePositionsUpdate()
     },
     nextMonth() {
+      this._armMonthTransitionFallback()
       this.startingDate = this.addMonths(this.months[this.months.length - 1].firstDateOfMonth)
       this.months.push(this.getMonth(this.startingDate))
       this.months.splice(0, 1)
@@ -1748,6 +1794,7 @@ export default {
       }
     },
     updateMonth(offset, year, event) {
+      this._armMonthTransitionFallback()
       const newMonth = event.target.value
       const monthIdx = this.monthNames.indexOf(newMonth)
       const newDate = setYear(setMonth(this.startingDate, monthIdx), year)
@@ -1756,6 +1803,7 @@ export default {
       this._scheduleReservationBadgePositionsUpdate()
     },
     updateYear(offset, monthIdx, event) {
+      this._armMonthTransitionFallback()
       const newYear = event.target.value
       const newDate = setYear(setMonth(this.startingDate, monthIdx), newYear)
       this.startingDate = subMonths(newDate, offset)
@@ -2481,6 +2529,12 @@ $border: 1px solid var(--asd-day-border);
     overflow: visible;
     z-index: 2;
     /* above overlays and cells */
+    transition: opacity $transition-time ease;
+  }
+
+  &__reservation-layer--transitioning {
+    opacity: 0;
+    pointer-events: none;
   }
 
   &__reservation-floating {
