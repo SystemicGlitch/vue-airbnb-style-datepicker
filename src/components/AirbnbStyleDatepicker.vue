@@ -471,6 +471,7 @@ export default {
       isDark: false,
       _darkMo: null,
       reservationBadgePositions: [],
+      _badgePosTimeout: null,
     }
   },
   computed: {
@@ -679,11 +680,11 @@ export default {
       }, 0)
     },
     reservations: {
-      handler() { this.$nextTick(() => this.updateReservationBadgePositions()) },
+      handler() { this._scheduleReservationBadgePositionsUpdate() },
       deep: true,
     },
     months() {
-      this.$nextTick(() => this.updateReservationBadgePositions())
+      this._scheduleReservationBadgePositionsUpdate()
     },
   },
   created() {
@@ -750,7 +751,7 @@ export default {
     }
 
     // Position floating badges after initial render and on resize
-    this.$nextTick(() => this.updateReservationBadgePositions())
+    this._scheduleReservationBadgePositionsUpdate()
     this._handleBadgeResizeEvent = debounce(() => this.updateReservationBadgePositions(), 100)
     window.addEventListener('resize', this._handleBadgeResizeEvent)
     try {
@@ -765,6 +766,7 @@ export default {
     window.removeEventListener('resize', this._handleWindowResizeEvent)
     if (this._handleBadgeResizeEvent) window.removeEventListener('resize', this._handleBadgeResizeEvent)
     if (this._gridRo) { try { this._gridRo.disconnect() } catch (e) { } this._gridRo = null }
+    if (this._badgePosTimeout) { clearTimeout(this._badgePosTimeout); this._badgePosTimeout = null }
     if (this._darkMo) {
       try {
         this._darkMo.disconnect()
@@ -1038,6 +1040,31 @@ export default {
       }
     },
     // Compute screen positions for once-per-reservation floating badges
+    _pickVisibleDateCell(ref) {
+      const list = Array.isArray(ref) ? ref : [ref]
+      if (!list || !list.length) return null
+
+      for (let i = 0; i < list.length; i++) {
+        const el = list[i]
+        if (!el || !el.closest) continue
+        const monthEl = el.closest('.asd__month')
+        if (monthEl && monthEl.classList && monthEl.classList.contains('asd__month--hidden')) continue
+        const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null
+        if (rect && rect.width > 0 && rect.height > 0) return el
+      }
+
+      return list[0] || null
+    },
+    _scheduleReservationBadgePositionsUpdate() {
+      this.$nextTick(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => this.updateReservationBadgePositions())
+        })
+      })
+      // Month navigation animates; run a delayed pass after transition settles.
+      if (this._badgePosTimeout) clearTimeout(this._badgePosTimeout)
+      this._badgePosTimeout = setTimeout(() => this.updateReservationBadgePositions(), 420)
+    },
     updateReservationBadgePositions() {
       try {
         const wrapper = this.$el && this.$el.querySelector && this.$el.querySelector('.asd__inner-wrapper')
@@ -1055,7 +1082,7 @@ export default {
           const rects = []
           while (true && guard < 500) {
             const ref = this.$refs[`date-${d}`]
-            const el = Array.isArray(ref) ? ref[0] : ref
+            const el = this._pickVisibleDateCell(ref)
             if (el && el.getBoundingClientRect) {
               const rect = el.getBoundingClientRect()
               rects.push({ d, rect })
@@ -1697,6 +1724,7 @@ export default {
       this.months.splice(this.months.length - 1, 1)
       this.$emit('previous-month', this.visibleMonths)
       this.resetFocusedDate(false)
+      this._scheduleReservationBadgePositionsUpdate()
     },
     nextMonth() {
       this.startingDate = this.addMonths(this.months[this.months.length - 1].firstDateOfMonth)
@@ -1704,6 +1732,7 @@ export default {
       this.months.splice(0, 1)
       this.$emit('next-month', this.visibleMonths)
       this.resetFocusedDate(true)
+      this._scheduleReservationBadgePositionsUpdate()
     },
     subtractMonths(date) {
       return format(subMonths(date, 1), this.dateFormat)
@@ -1724,12 +1753,14 @@ export default {
       const newDate = setYear(setMonth(this.startingDate, monthIdx), year)
       this.startingDate = subMonths(newDate, offset)
       this.generateMonths()
+      this._scheduleReservationBadgePositionsUpdate()
     },
     updateYear(offset, monthIdx, event) {
       const newYear = event.target.value
       const newDate = setYear(setMonth(this.startingDate, monthIdx), newYear)
       this.startingDate = subMonths(newDate, offset)
       this.generateMonths()
+      this._scheduleReservationBadgePositionsUpdate()
     },
     openDatepicker() {
       this.positionDatepicker()
