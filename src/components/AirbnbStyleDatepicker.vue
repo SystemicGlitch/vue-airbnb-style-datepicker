@@ -872,6 +872,68 @@ export default {
       if (!date || !reservation || !reservation.start || !reservation.end) return false
       return isAfter(date, reservation.start) && isBefore(date, reservation.end)
     },
+    getNearestReservationBoundary(date, direction) {
+      if (!date || !Array.isArray(this.reservations) || !this.reservations.length) return null
+      let boundary = null
+
+      for (let i = 0; i < this.reservations.length; i++) {
+        const r = this.reservations[i]
+        if (!r || !r.start || !r.end) continue
+
+        if (direction === 'forward') {
+          if (isAfter(r.start, date) && (!boundary || isBefore(r.start, boundary))) {
+            boundary = r.start
+          }
+        } else if (direction === 'backward') {
+          if (isBefore(r.end, date) && (!boundary || isAfter(r.end, boundary))) {
+            boundary = r.end
+          }
+        }
+      }
+
+      return boundary
+    },
+    constrainRangeEndDate(startDate, candidateDate) {
+      if (!startDate || !candidateDate) return candidateDate
+      let constrainedCandidate = candidateDate
+
+      if (isAfter(constrainedCandidate, startDate)) {
+        const forwardBoundary = this.getNearestReservationBoundary(startDate, 'forward')
+        if (forwardBoundary && isAfter(constrainedCandidate, forwardBoundary)) {
+          constrainedCandidate = forwardBoundary
+        }
+      } else if (isBefore(constrainedCandidate, startDate)) {
+        const backwardBoundary = this.getNearestReservationBoundary(startDate, 'backward')
+        if (backwardBoundary && isBefore(constrainedCandidate, backwardBoundary)) {
+          constrainedCandidate = backwardBoundary
+        }
+      }
+
+      // Also clamp by non-selectable dates (disabled/min/end constraints) encountered on the path.
+      if (isAfter(constrainedCandidate, startDate)) {
+        let d = format(addDays(startDate, 1), this.dateFormat)
+        let guard = 0
+        while ((d === constrainedCandidate || isBefore(d, constrainedCandidate)) && guard < 500) {
+          if (this.isDateDisabled(d) || this.isBeforeMinDate(d) || this.isAfterEndDate(d)) {
+            return format(subDays(d, 1), this.dateFormat)
+          }
+          d = format(addDays(d, 1), this.dateFormat)
+          guard++
+        }
+      } else if (isBefore(constrainedCandidate, startDate)) {
+        let d = format(subDays(startDate, 1), this.dateFormat)
+        let guard = 0
+        while ((d === constrainedCandidate || isAfter(d, constrainedCandidate)) && guard < 500) {
+          if (this.isDateDisabled(d) || this.isBeforeMinDate(d) || this.isAfterEndDate(d)) {
+            return format(addDays(d, 1), this.dateFormat)
+          }
+          d = format(subDays(d, 1), this.dateFormat)
+          guard++
+        }
+      }
+
+      return constrainedCandidate
+    },
     getReservationDateInfo(date, reservation, idx) {
       if (!date || !reservation || !reservation.start || !reservation.end) return null
       const inRange =
@@ -931,7 +993,15 @@ export default {
           .filter(r => r.variant === 'start' || r.variant === 'end' || r.variant === 'single')
           .filter(this.shouldRenderReservationOverlay)
       }
-      if (this.isInRange(date) || this.isHoveredInRange(date)) {
+      // During hover preview, preserve reservation boundaries so the reserved half
+      // remains colored while hover fills the free half.
+      if (this.isHoveredInRange(date)) {
+        return this
+          .reservationsFor(date)
+          .filter(r => r.variant === 'start' || r.variant === 'end' || r.variant === 'single')
+          .filter(this.shouldRenderReservationOverlay)
+      }
+      if (this.isInRange(date)) {
         return []
       }
       return this.reservationsFor(date).filter(this.shouldRenderReservationOverlay)
@@ -1463,7 +1533,7 @@ export default {
 
       // Second click: selecting end (supports backwards selection and same-day)
       const start = this.selectedDate1
-      const endCandidate = date
+      const endCandidate = this.constrainRangeEndDate(start, date)
       if (isBefore(endCandidate, start)) {
         // backwards: swap
         this.selectedDate1 = endCandidate
@@ -1483,7 +1553,11 @@ export default {
       }
     },
     setHoverDate(date) {
-      this.hoverDate = date
+      if (!this.isSelectingDate1 && this.selectedDate1 && date) {
+        this.hoverDate = this.constrainRangeEndDate(this.selectedDate1, date)
+      } else {
+        this.hoverDate = date
+      }
       const rr = this.reservationFor(date)
       this.hoveredReservationIdx = rr ? rr.idx : null
       // Emit hovered reservation info so parent apps can react (e.g., highlight a booking row)
@@ -1769,6 +1843,7 @@ $transition-time: 0.3s;
   --asd-border-color: rgba(0, 0, 0, 0.2);
   --asd-day-hover-bg: #e4e7e7;
   --asd-day-border: #e4e7e7;
+  --asd-reservation-separator: #ffffff;
 }
 
 /* Manual dark theme override (opt-in) */
@@ -1784,6 +1859,7 @@ $transition-time: 0.3s;
   --asd-border-color: rgba(255, 255, 255, 0.2);
   --asd-day-hover-bg: #2d2d2d;
   --asd-day-border: #3a3a3a;
+  --asd-reservation-separator: #111111;
 }
 
 $tablet: 768px;
@@ -2155,6 +2231,11 @@ $border: 1px solid var(--asd-day-border);
       }
     }
 
+    /* Disabled cells also carry --enabled class in markup; suppress focus ring there */
+    &--enabled.asd__day--disabled:focus {
+      outline: none !important;
+    }
+
     &--disabled,
     &--empty {
       opacity: 0.5;
@@ -2162,11 +2243,31 @@ $border: 1px solid var(--asd-day-border);
       button {
         cursor: default;
       }
+
+      &:focus {
+        outline: none !important;
+      }
     }
 
     /* Keep booked days fully visible even when they are disabled for selection */
     &--disabled.asd__day--has-reservation {
       opacity: 1;
+    }
+
+    /* Keep active range visuals at full strength, even if the cell is disabled */
+    &--disabled.asd__day--selected,
+    &--disabled.asd__day--in-range,
+    &--disabled.asd__day--hovered {
+      opacity: 1;
+    }
+
+    /* Non-clickable reservation dates should never show click/selection border accents */
+    &--disabled.asd__day--has-reservation.asd__day--selected,
+    &--disabled.asd__day--has-reservation.asd__day--in-range,
+    &--disabled.asd__day--has-reservation.asd__day--hovered {
+      border: 1px solid transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
     }
 
     /* In read-only mode, keep full color/opacity even though the button is disabled */
@@ -2211,9 +2312,9 @@ $border: 1px solid var(--asd-day-border);
     }
 
     &--hovered {
-      background: var(--asd-hovered-in-range) !important;
+      background: var(--asd-selected) !important;
       color: var(--asd-selected-text) !important;
-      border: 1px double var(--asd-in-range-border) !important;
+      border: 1px double var(--asd-selected) !important;
     }
 
     /* Make today's number bold regardless of position */
@@ -2243,11 +2344,21 @@ $border: 1px solid var(--asd-day-border);
   }
 
   &__reservation--start {
-    background: linear-gradient(135deg, transparent 49.5%, var(--resv-color) 50%);
+    background: linear-gradient(
+      135deg,
+      transparent 49.2%,
+      var(--asd-reservation-separator) 49.2% 50%,
+      var(--resv-color) 50%
+    );
   }
 
   &__reservation--end {
-    background: linear-gradient(135deg, var(--resv-color) 0 50%, transparent 50%);
+    background: linear-gradient(
+      135deg,
+      var(--resv-color) 0 50%,
+      var(--asd-reservation-separator) 50% 50.8%,
+      transparent 50.8%
+    );
   }
 
   /* Group hover: when hovering a reserved day, dim all reservations and emphasize matching group */

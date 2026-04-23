@@ -727,5 +727,69 @@ describe('AirbnbStyleDatepicker', () => {
       expect(wrapper.vm.selectedDate1).toBe('')
       expect(wrapper.vm.selectedDate2).toBe('')
     })
+
+    test('range end is clamped to next reservation start when selecting forward', () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+        reservations: [
+          { start: '2018-12-05', end: '2018-12-08', label: 'R1' },
+        ],
+      })
+
+      wrapper.vm.selectDate('2018-12-02')
+      wrapper.vm.selectDate('2018-12-20')
+
+      expect(wrapper.vm.selectedDate1).toBe('2018-12-02')
+      expect(wrapper.vm.selectedDate2).toBe('2018-12-05')
+    })
+
+    test('range end is clamped to previous reservation end when selecting backward', () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+        reservations: [
+          { start: '2018-12-01', end: '2018-12-02', label: 'R1' },
+        ],
+      })
+
+      wrapper.vm.selectDate('2018-12-05')
+      wrapper.vm.selectDate('2018-11-20')
+
+      expect(wrapper.vm.selectedDate1).toBe('2018-12-02')
+      expect(wrapper.vm.selectedDate2).toBe('2018-12-05')
+    })
+
+    test('range end is clamped before next disabled date when selecting forward', () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+        disabledDates: ['2018-12-09'],
+      })
+
+      wrapper.vm.selectDate('2018-12-08')
+      wrapper.vm.selectDate('2018-12-12')
+
+      expect(wrapper.vm.selectedDate1).toBe('2018-12-08')
+      expect(wrapper.vm.selectedDate2).toBe('2018-12-08')
+    })
+
+    test('range end is clamped after previous disabled date when selecting backward', () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+        disabledDates: ['2018-12-09'],
+      })
+
+      wrapper.vm.selectDate('2018-12-10')
+      wrapper.vm.selectDate('2018-12-01')
+
+      expect(wrapper.vm.selectedDate1).toBe('2018-12-10')
+      expect(wrapper.vm.selectedDate2).toBe('2018-12-10')
+    })
   })
 })
