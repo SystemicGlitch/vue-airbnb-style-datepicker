@@ -8,8 +8,10 @@ Key features
 - Flexible inline layout: monthWidth and autoFitInline
 - Theming: light, dark, auto (auto follows global dark mode)
 - Range selection improvements (backwards selection, smooth reselect flow)
+- Pluggable selection strategies: single, range, reservation-aware-range
 - Reservations with colors, labels, tooltips, and group hover highlight
 - Blocked dates (disabled) support
+- Unified interaction events: selection-changed, hover-range-changed, blocked-date-clicked
 - Keyboard shortcuts help popup (theme-aware), toggleable, localizable
 - Per-instance localization for help lines and labels
 
@@ -51,7 +53,7 @@ This repo is consumable directly from Git. A prepare script builds the library o
 npm install github:SystemicGlitch/vue-airbnb-style-datepicker#master
 
 # or pin a tag/commit
-npm install github:SystemicGlitch/vue-airbnb-style-datepicker#v2.7.0
+npm install github:SystemicGlitch/vue-airbnb-style-datepicker#v2.8.0
 ```
 
 Peer deps
@@ -138,6 +140,7 @@ Inline layout and sizing
 Reservations, disabled dates, and tooltips
 - reservations: [{ id?, start, end, label?, tooltip?, color? }]
 - disabled-dates: string[] of YYYY-MM-DD
+- selection-strategy: 'single' | 'range' | 'reservation-aware-range' (optional)
 - Reservation behavior: all days strictly inside a reservation are not selectable; the start and end days remain selectable (typical check-in/out UX).
 - Visual behavior: reservation color fill is shown on start/end days; disabled interior days keep the normal disabled appearance.
 - Emits:
@@ -148,10 +151,23 @@ Reservations, disabled dates, and tooltips
 <airbnb-style-datepicker
   :inline="true"
   :months-to-show="2"
+  :selection-strategy="'reservation-aware-range'"
   :reservations="bookings"
   :disabled-dates="blockedDates"
   @reservation-hovered="onReservationHovered"
   @reservation-clicked="onReservationClicked"
+/>
+```
+
+Selection strategy
+- `single`: one date only
+- `range`: standard range selection (no reservation-boundary clamp)
+- `reservation-aware-range`: range selection constrained by reservation boundaries (default when `mode='range'`)
+
+```vue
+<airbnb-style-datepicker
+  :mode="'range'"
+  :selection-strategy="'reservation-aware-range'"
 />
 ```
 
@@ -186,6 +202,14 @@ Floating reservation badges (slot)
 ```
 
 Events (full list)
+- Preferred (new unified contract):
+  - selection-changed:
+    - payload: `{ mode, strategy, startDate, endDate, isSelectingStart, hasSelection, hasCompleteRange, source?, action?, clickedDate? }`
+  - hover-range-changed:
+    - payload: `{ mode, strategy, hoverDate, startDate, endDate, isPreviewingRange, previewStartDate, previewEndDate, source? }`
+  - blocked-date-clicked:
+    - payload: `{ mode, strategy, date, reason, minDate, endDate }`
+    - reason: `not-selectable | before-min | after-end | disabled`
 - date-one-selected: string 'YYYY-MM-DD' | ''
 - date-two-selected: string 'YYYY-MM-DD' | ''
 - previous-month: string[] of first-visible-month dates
@@ -193,6 +217,42 @@ Events (full list)
 - opened / closed / cancelled / apply
 - reservation-hovered: { id, index, start, end } | null (on leave)
 - reservation-clicked: { id, start, end, label?, color? }
+
+Deprecation guidance
+- `date-one-selected` and `date-two-selected` are still emitted for backward compatibility.
+- For new integrations, prefer `selection-changed` and `hover-range-changed`.
+
+Migration to unified events
+
+Before (legacy)
+```vue
+<airbnb-style-datepicker
+  :mode="'range'"
+  :date-one="dateOne"
+  :date-two="dateTwo"
+  @date-one-selected="v => (dateOne = v)"
+  @date-two-selected="v => (dateTwo = v)"
+/>
+```
+
+After (preferred)
+```vue
+<airbnb-style-datepicker
+  :mode="'range'"
+  :date-one="dateOne"
+  :date-two="dateTwo"
+  @selection-changed="onSelectionChanged"
+  @hover-range-changed="onHoverRangeChanged"
+  @blocked-date-clicked="onBlockedDateClicked"
+/>
+```
+
+```js
+function onSelectionChanged(payload) {
+  dateOne.value = payload.startDate || ''
+  dateTwo.value = payload.endDate || ''
+}
+```
 
 Localization (help popup & labels)
 - keyboardShortcutsOverride: Array<{ symbol, label, symbolDescription }>
@@ -230,5 +290,3 @@ Changelog (high level)
 
 License & attribution
 - MIT. Based on the original work by Mikael Edebro. This fork modernizes the implementation for Vue 3 and Vite and adds new UX features.
-
-

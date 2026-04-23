@@ -129,11 +129,19 @@
         <h3>Reservations demo</h3>
         <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
           <label><input type="checkbox" v-model="showReservationsDemo" /> Show reservations</label>
+          <label>Selection strategy:
+            <select v-model="demoSelectionStrategy" style="margin-left:6px;">
+              <option value="reservation-aware-range">reservation-aware-range (default)</option>
+              <option value="range">range</option>
+              <option value="single">single</option>
+            </select>
+          </label>
         </div>
         <airbnb-style-datepicker
           :inline="true"
           :months-to-show="2"
           :date-one="inlineDateOne"
+          :selection-strategy="demoSelectionStrategy"
           :theme="demoTheme"
           :month-names-override="currentLocale.monthNames"
           :days-override="currentLocale.days"
@@ -142,6 +150,9 @@
           :disabled-dates="showReservationsDemo ? demoBlockedDates : []"
           @date-one-selected="val => { inlineDateOne = val }"
           @reservation-hovered="onReservationHovered"
+          @selection-changed="onSelectionChanged"
+          @hover-range-changed="onHoverRangeChanged"
+          @blocked-date-clicked="onBlockedDateClicked"
         >
           <template #reservation-floating="{ reservation }">
             <span :style="{
@@ -173,6 +184,16 @@
               <span style="font-size:0.95em">{{ r.start }} — {{ r.end }} <small style="color:#666;">{{ r.color ? r.color : '(auto color)' }}</small></span>
             </li>
           </ul>
+        </div>
+        <div v-if="lastSelectionChangedMsg" style="margin-top:6px; color:#333;">
+          <strong>selection-changed:</strong> {{ lastSelectionChangedMsg }}
+        </div>
+        <div v-if="lastBlockedDateMsg" style="margin-top:6px; color:#333;">
+          <strong>blocked-date-clicked:</strong> {{ lastBlockedDateMsg }}
+        </div>
+        <div style="margin-top:6px; color:#666; font-size:12px;">
+          Preferred events: <code>selection-changed</code> and <code>hover-range-changed</code>. Legacy
+          <code>date-one-selected</code>/<code>date-two-selected</code> are still emitted for backwards compatibility.
         </div>
       </div>
 
@@ -234,7 +255,10 @@
             demoDayPosition: 'top-left',
             demoDayExtraPosition: 'bottom',
             showReservationsDemo: true,
+            demoSelectionStrategy: 'reservation-aware-range',
             hoveredBookingId: null,
+            lastSelectionChangedMsg: '',
+            lastBlockedDateMsg: '',
             demoReservations: [
               { id: 101, start: '2026-03-02', end: '2026-03-04', label: 'Alice Nguyen', tooltip: 'Guest: Alice Nguyen', color: '#e67e22' },
               { id: 104, start: '2026-03-20', end: '2026-03-21', label: 'Day Guest', tooltip: 'Guest: Day Guest', color: '#8e44ad' },
@@ -263,6 +287,26 @@
             return s
           },
           onReservationHovered(payload){ this.hoveredBookingId = payload ? payload.id : null },
+          onSelectionChanged(payload){
+            try {
+              const start = payload && payload.startDate ? payload.startDate : '-'
+              const end = payload && payload.endDate ? payload.endDate : '-'
+              const strategy = payload && payload.strategy ? payload.strategy : this.demoSelectionStrategy
+              this.lastSelectionChangedMsg = `${start} -> ${end} (${strategy})`
+            } catch (e) {
+              this.lastSelectionChangedMsg = 'selection changed'
+            }
+          },
+          onHoverRangeChanged(_payload){},
+          onBlockedDateClicked(payload){
+            try {
+              const date = payload && payload.date ? payload.date : '?'
+              const reason = payload && payload.reason ? payload.reason : 'blocked'
+              this.lastBlockedDateMsg = `${date} (${reason})`
+            } catch (e) {
+              this.lastBlockedDateMsg = 'blocked date'
+            }
+          },
         }
       })
       app.use(window.AirbnbStyleDatepicker)

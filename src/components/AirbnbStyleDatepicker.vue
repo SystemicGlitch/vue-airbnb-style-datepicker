@@ -198,7 +198,6 @@
 import format from 'date-fns/format'
 import subMonths from 'date-fns/sub_months'
 import addMonths from 'date-fns/add_months'
-import getDaysInMonth from 'date-fns/get_days_in_month'
 import lastDayOfMonth from 'date-fns/last_day_of_month'
 import getMonth from 'date-fns/get_month'
 import setMonth from 'date-fns/set_month'
@@ -218,6 +217,35 @@ import isAfter from 'date-fns/is_after'
 import isValid from 'date-fns/is_valid'
 import { debounce, copyObject, findAncestor, randomString } from './../helpers'
 import ResizeSelect from '../directives/ResizeSelect'
+import {
+  hexToRgb,
+  rgbToHex,
+  luminance,
+  adjustForContrast,
+  lightenColor,
+  hashColorFromKey,
+} from './logic/colorUtils'
+import {
+  isReservationInteriorDate as isReservationInteriorDateUtil,
+  getNearestReservationBoundary as getNearestReservationBoundaryUtil,
+  buildReservationDateInfo,
+  reservationForDate,
+  reservationsForDate,
+  isDateDisabledByReservationInterior,
+} from './logic/reservationUtils'
+import {
+  constrainRangeEndDate as constrainRangeEndDateUtil,
+  isInRange as isInRangeUtil,
+  isHoveredInRange as isHoveredInRangeUtil,
+} from './logic/selectionUtils'
+import { computeBadgeAnchor } from './logic/badgeLayout'
+import { buildMonth, buildWeeks } from './logic/calendarModel'
+import {
+  SELECTION_STRATEGIES,
+  normalizeSelectionStrategy,
+  resolveClickTransitionByStrategy,
+  resolveHoverDateByStrategy,
+} from './logic/selectionStrategies'
 
 export default {
   name: 'AirbnbStyleDatepicker',
@@ -235,6 +263,10 @@ export default {
     'reservation-hovered',
     // Emitted when clicking a floating reservation badge
     'reservation-clicked',
+    // New unified event contract
+    'selection-changed',
+    'hover-range-changed',
+    'blocked-date-clicked',
   ],
   directives: {
     // Local click-outside directive (Vue 3): listens on pointerdown and ignores
@@ -276,6 +308,15 @@ export default {
     minDate: { type: [String, Date] },
     endDate: { type: [String, Date] },
     mode: { type: String, default: 'range' },
+    // Selection behavior strategy:
+    // - 'single'
+    // - 'range'
+    // - 'reservation-aware-range' (default for range mode)
+    selectionStrategy: {
+      type: String,
+      default: undefined,
+      validator: v => [undefined, ...SELECTION_STRATEGIES].includes(v),
+    },
     offsetY: { type: Number, default: 0 },
     offsetX: { type: Number, default: 0 },
     monthsToShow: { type: Number, default: 2 },
@@ -586,6 +627,9 @@ export default {
     isSingleMode() {
       return this.mode === 'single'
     },
+    activeSelectionStrategy() {
+      return normalizeSelectionStrategy(this.selectionStrategy, this.mode)
+    },
     datepickerWidth() {
       return this.monthWidthNum * this.showMonths
     },
@@ -815,190 +859,62 @@ export default {
     },
     // --- Reservation colors & detection ---
     _hexToRgb(c) {
-      try {
-        if (!c) return null
-        if (c.startsWith('#')) {
-          const n = c.length === 4 ? c.replace(/#(.)(.)(.)/, '#$1$1$2$2$3$3') : c
-          const m = n.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i)
-          if (!m) return null
-          return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) }
-        }
-        const m = c.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i)
-        if (m) return { r: +m[1], g: +m[2], b: +m[3] }
-      } catch (e) { }
-      return null
+      return hexToRgb(c)
     },
     _rgbToHex({ r, g, b }) {
-      const h = n => ('0' + Math.max(0, Math.min(255, Math.round(n))).toString(16)).slice(-2)
-      return `#${h(r)}${h(g)}${h(b)}`
+      return rgbToHex({ r, g, b })
     },
     _luminance({ r, g, b }) {
-      const a = [r, g, b].map(v => {
-        v /= 255
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
-      })
-      return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]
+      return luminance({ r, g, b })
     },
     _adjustForContrast(color) {
-      const rgb = this._hexToRgb(color)
-      if (!rgb) return color
-      const L = this._luminance(rgb)
-      if (this.isDark) {
-        if (L > 0.85) {
-          const f = 0.75
-          return this._rgbToHex({ r: rgb.r * f, g: rgb.g * f, b: rgb.b * f })
-        }
-      } else {
-        if (L < 0.12) {
-          const f = 1.35
-          return this._rgbToHex({ r: rgb.r * f, g: rgb.g * f, b: rgb.b * f })
-        }
-      }
-      return color
+      return adjustForContrast(color, this.isDark)
     },
     _lightenColor(color, amount = 0.18) {
-      const rgb = this._hexToRgb(color)
-      if (!rgb) return color
-      const a = Math.max(0, Math.min(1, amount))
-      return this._rgbToHex({
-        r: rgb.r + (255 - rgb.r) * a,
-        g: rgb.g + (255 - rgb.g) * a,
-        b: rgb.b + (255 - rgb.b) * a,
-      })
+      return lightenColor(color, amount)
     },
     _hashColor(key) {
-      let h = 0
-      for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
-      const hue = h % 360
-      const s = 60
-      const l = this.isDark ? 40 : 65
-      const c = (1 - Math.abs(2 * l / 100 - 1)) * (s / 100)
-      const x = c * (1 - Math.abs(((hue / 60) % 2) - 1))
-      const m = l / 100 - c / 2
-      let r = 0, g = 0, b = 0
-      if (hue < 60) { r = c; g = x }
-      else if (hue < 120) { r = x; g = c }
-      else if (hue < 180) { g = c; b = x }
-      else if (hue < 240) { g = x; b = c }
-      else if (hue < 300) { r = x; b = c }
-      else { r = c; b = x }
-      return this._rgbToHex({ r: (r + m) * 255, g: (g + m) * 255, b: (b + m) * 255 })
+      return hashColorFromKey(key, this.isDark)
     },
     isReservationInteriorDate(date, reservation) {
-      if (!date || !reservation || !reservation.start || !reservation.end) return false
-      return isAfter(date, reservation.start) && isBefore(date, reservation.end)
+      return isReservationInteriorDateUtil(date, reservation)
     },
     getNearestReservationBoundary(date, direction) {
-      if (!date || !Array.isArray(this.reservations) || !this.reservations.length) return null
-      let boundary = null
-
-      for (let i = 0; i < this.reservations.length; i++) {
-        const r = this.reservations[i]
-        if (!r || !r.start || !r.end) continue
-
-        if (direction === 'forward') {
-          if (isAfter(r.start, date) && (!boundary || isBefore(r.start, boundary))) {
-            boundary = r.start
-          }
-        } else if (direction === 'backward') {
-          if (isBefore(r.end, date) && (!boundary || isAfter(r.end, boundary))) {
-            boundary = r.end
-          }
-        }
-      }
-
-      return boundary
+      return getNearestReservationBoundaryUtil(date, direction, this.reservations)
     },
     constrainRangeEndDate(startDate, candidateDate) {
-      if (!startDate || !candidateDate) return candidateDate
-      let constrainedCandidate = candidateDate
-
-      if (isAfter(constrainedCandidate, startDate)) {
-        const forwardBoundary = this.getNearestReservationBoundary(startDate, 'forward')
-        if (forwardBoundary && isAfter(constrainedCandidate, forwardBoundary)) {
-          constrainedCandidate = forwardBoundary
-        }
-      } else if (isBefore(constrainedCandidate, startDate)) {
-        const backwardBoundary = this.getNearestReservationBoundary(startDate, 'backward')
-        if (backwardBoundary && isBefore(constrainedCandidate, backwardBoundary)) {
-          constrainedCandidate = backwardBoundary
-        }
-      }
-
-      // Also clamp by non-selectable dates (disabled/min/end constraints) encountered on the path.
-      if (isAfter(constrainedCandidate, startDate)) {
-        let d = format(addDays(startDate, 1), this.dateFormat)
-        let guard = 0
-        while ((d === constrainedCandidate || isBefore(d, constrainedCandidate)) && guard < 500) {
-          if (this.isDateDisabled(d) || this.isBeforeMinDate(d) || this.isAfterEndDate(d)) {
-            return format(subDays(d, 1), this.dateFormat)
-          }
-          d = format(addDays(d, 1), this.dateFormat)
-          guard++
-        }
-      } else if (isBefore(constrainedCandidate, startDate)) {
-        let d = format(subDays(startDate, 1), this.dateFormat)
-        let guard = 0
-        while ((d === constrainedCandidate || isAfter(d, constrainedCandidate)) && guard < 500) {
-          if (this.isDateDisabled(d) || this.isBeforeMinDate(d) || this.isAfterEndDate(d)) {
-            return format(addDays(d, 1), this.dateFormat)
-          }
-          d = format(subDays(d, 1), this.dateFormat)
-          guard++
-        }
-      }
-
-      return constrainedCandidate
+      return constrainRangeEndDateUtil({
+        startDate,
+        candidateDate,
+        dateFormat: this.dateFormat,
+        getNearestBoundary: (date, direction) => this.getNearestReservationBoundary(date, direction),
+        isDateBlocked: date => this.isDateDisabled(date) || this.isBeforeMinDate(date) || this.isAfterEndDate(date),
+      })
+    },
+    constrainRangeEndDateDefaultRange(startDate, candidateDate) {
+      return constrainRangeEndDateUtil({
+        startDate,
+        candidateDate,
+        dateFormat: this.dateFormat,
+        getNearestBoundary: () => null,
+        isDateBlocked: date => this.isDateDisabled(date) || this.isBeforeMinDate(date) || this.isAfterEndDate(date),
+      })
     },
     getReservationDateInfo(date, reservation, idx) {
-      if (!date || !reservation || !reservation.start || !reservation.end) return null
-      const inRange =
-        (isAfter(date, reservation.start) || date === reservation.start) &&
-        (isBefore(date, reservation.end) || date === reservation.end)
-
-      if (!inRange) return null
-
-      const isStart = date === reservation.start
-      const isEnd = date === reservation.end
-      const variant = isStart && isEnd ? 'single' : isStart ? 'start' : isEnd ? 'end' : 'middle'
-      const base = reservation.color || this._hashColor(`${reservation.start}|${reservation.end}`)
-      const color = this._adjustForContrast(base)
-
-      return {
-        variant,
-        color,
-        idx,
-        id: reservation.id != null ? reservation.id : idx,
-        label: reservation.label,
-        tooltip: reservation.tooltip || reservation.label,
-        start: reservation.start,
-        end: reservation.end,
-        isStart,
-        isEnd,
-      }
+      return buildReservationDateInfo(date, reservation, idx, r => {
+        const base = r.color || this._hashColor(`${r.start}|${r.end}`)
+        return this._adjustForContrast(base)
+      })
     },
     shouldRenderReservationOverlay(reservationDateInfo) {
       return !!reservationDateInfo
     },
     reservationFor(date) {
-      if (!date || !this.reservations || !this.reservations.length) return null
-      for (let i = 0; i < this.reservations.length; i++) {
-        const r = this.reservations[i]
-        const reservationDateInfo = this.getReservationDateInfo(date, r, i)
-        if (reservationDateInfo) return reservationDateInfo
-      }
-      return null
+      return reservationForDate(date, this.reservations, (d, r, i) => this.getReservationDateInfo(d, r, i))
     },
     // Return all reservations that affect a given date (e.g., end of one and start of another on the same day)
     reservationsFor(date) {
-      if (!date || !this.reservations || !this.reservations.length) return []
-      const results = []
-      for (let i = 0; i < this.reservations.length; i++) {
-        const r = this.reservations[i]
-        const reservationDateInfo = this.getReservationDateInfo(date, r, i)
-        if (reservationDateInfo) results.push(reservationDateInfo)
-      }
-      return results
+      return reservationsForDate(date, this.reservations, (d, r, i) => this.getReservationDateInfo(d, r, i))
     },
     reservationOverlaysFor(date) {
       // Keep selected ranges visually consistent, but allow reservation boundary overlays
@@ -1116,12 +1032,10 @@ export default {
         const wrapRect = wrapper.getBoundingClientRect()
         const results = []
 
-        const almostEqual = (a, b) => Math.abs(a - b) < 1.0
         const addOne = (r, reservationIdx) => {
           // Iterate dates from start to end and collect visible cell rects
           let d = r.start
           let guard = 0
-          let minL = Infinity, minT = Infinity, maxR = -Infinity, maxB = -Infinity
           let any = false
           const rects = []
           while (true && guard < 500) {
@@ -1130,10 +1044,6 @@ export default {
             if (el && el.getBoundingClientRect) {
               const rect = el.getBoundingClientRect()
               rects.push({ d, rect })
-              minL = Math.min(minL, rect.left)
-              minT = Math.min(minT, rect.top)
-              maxR = Math.max(maxR, rect.right)
-              maxB = Math.max(maxB, rect.bottom)
               any = true
             }
             if (d === r.end) break
@@ -1142,71 +1052,30 @@ export default {
           }
           if (!any) return
 
-          // Choose first visible row segment (top-most row among collected rects)
-          // Build row groups (contiguous visible cells sharing the same row)
-          const rectsSorted = rects.slice().sort((a, b) => (a.rect.top - b.rect.top) || (a.rect.left - b.rect.left))
-          const rowGroups = []
-          for (const it of rectsSorted) {
-            const g = rowGroups[rowGroups.length - 1]
-            if (!g || !almostEqual(g[0].rect.top, it.rect.top)) rowGroups.push([it])
-            else g.push(it)
-          }
-          // Choose the first group with at least N cells; otherwise choose the widest group
-          const minCells = Math.max(1, this.reservationBadgeMinCellsForRowCenter || 2)
-          const byWidth = g => g[g.length - 1].rect.right - g[0].rect.left
-          let chosenGroup = rowGroups.find(g => g.length >= minCells) || rowGroups.slice().sort((a, b) => byWidth(b) - byWidth(a))[0] || rowGroups[0]
-          const rowRects = chosenGroup
-          const segLeft = rowRects[0].rect.left
-          const segRight = rowRects[rowRects.length - 1].rect.right
-          const startRectObj = rects.find(x => x.d === r.start) || rowRects[0]
-          const startRect = startRectObj.rect
-
-          // Compute anchor point based on placement
-          let x, y, anchorClass
-          // For center placement, vertically center across the entire reservation span
-          const fullY = (minT + maxB) / 2 - wrapRect.top
-          // Compute geometric center based on average of visible cell centers (robust across multi-row wraps)
-          const avg = arr => arr.reduce((a, b) => a + b, 0) / Math.max(1, arr.length)
-          const centersX = rects.map(x => (x.rect.left + x.rect.right) / 2)
-          const centersY = rects.map(x => (x.rect.top + x.rect.bottom) / 2)
-          const avgCenterX = avg(centersX) - wrapRect.left
-          const avgCenterY = avg(centersY) - wrapRect.top
-          const startY = (startRect.top + startRect.bottom) / 2 - wrapRect.top
-          const pad = this.reservationBadgeOffset || 6
-          if (this.reservationBadgePlacement === 'center') {
-            if (this.reservationBadgeCenterMode === 'full') {
-              x = avgCenterX
-              y = avgCenterY
-            } else { // 'row' mode: center on first visible row segment
-              const rowMidY = (rowRects[0].rect.top + rowRects[0].rect.bottom) / 2 - wrapRect.top
-              const rowMidX = (segLeft + segRight) / 2 - wrapRect.left
-              x = rowMidX
-              y = rowMidY
-            }
-            anchorClass = 'asd__badge--center'
-          } else if (this.reservationBadgePlacement === 'start-edge') {
-            x = startRect.right - wrapRect.left + pad
-            y = startY
-            anchorClass = 'asd__badge--start'
-          } else { // 'start-inside'
-            x = startRect.left - wrapRect.left + pad
-            y = startY
-            anchorClass = 'asd__badge--start'
-          }
-          // Clamp within wrapper bounds with a small margin
-          const margin = 6
-          x = Math.max(margin, Math.min((wrapRect.width - margin), x))
-
-          // Apply user-configured vertical offset so day number remains visible
-          if (this.reservationBadgeYOffset) {
-            y += Number(this.reservationBadgeYOffset) || 0
-          }
+          const anchor = computeBadgeAnchor({
+            rects,
+            wrapRect,
+            startDate: r.start,
+            placement: this.reservationBadgePlacement,
+            centerMode: this.reservationBadgeCenterMode,
+            minCellsForRowCenter: this.reservationBadgeMinCellsForRowCenter,
+            offset: this.reservationBadgeOffset || 6,
+            yOffset: this.reservationBadgeYOffset || 0,
+            clampMargin: 6,
+          })
+          if (!anchor) return
 
           const base = r.color || this._hashColor(`${r.start}|${r.end}`)
           const color = this._adjustForContrast(base)
           const id = (r && r.id) != null ? r.id : reservationIdx
           const badgeColor = this._lightenColor(color, 0.16)
-          results.push({ x, y, reservationIdx, reservation: { ...r, id, color, badgeColor }, anchorClass })
+          results.push({
+            x: anchor.x,
+            y: anchor.y,
+            reservationIdx,
+            reservation: { ...r, id, color, badgeColor },
+            anchorClass: anchor.anchorClass,
+          })
         }
 
         if (Array.isArray(this.reservations)) {
@@ -1242,11 +1111,55 @@ export default {
       } catch (e) { }
       this.$emit('reservation-clicked', reservation)
     },
-    clearSelectedDates() {
+    _selectionEventPayload(extra = {}) {
+      return {
+        mode: this.mode,
+        strategy: this.activeSelectionStrategy,
+        startDate: this.selectedDate1 || null,
+        endDate: this.selectedDate2 || null,
+        isSelectingStart: !!this.isSelectingDate1,
+        hasSelection: !!(this.selectedDate1 || this.selectedDate2),
+        hasCompleteRange: !!(this.selectedDate1 && this.selectedDate2),
+        ...extra,
+      }
+    },
+    emitSelectionChanged(extra = {}) {
+      this.$emit('selection-changed', this._selectionEventPayload(extra))
+    },
+    emitHoverRangeChanged(extra = {}) {
+      const hasHover = !!this.hoverDate
+      const hasStart = !!this.selectedDate1
+      const isPreviewingRange = !this.isSelectingDate1 && hasStart && hasHover
+      let previewStartDate = null
+      let previewEndDate = null
+      if (isPreviewingRange) {
+        if (isBefore(this.hoverDate, this.selectedDate1)) {
+          previewStartDate = this.hoverDate
+          previewEndDate = this.selectedDate1
+        } else {
+          previewStartDate = this.selectedDate1
+          previewEndDate = this.hoverDate
+        }
+      }
+      this.$emit('hover-range-changed', {
+        mode: this.mode,
+        strategy: this.activeSelectionStrategy,
+        hoverDate: this.hoverDate || null,
+        startDate: this.selectedDate1 || null,
+        endDate: this.selectedDate2 || null,
+        isPreviewingRange,
+        previewStartDate,
+        previewEndDate,
+        ...extra,
+      })
+    },
+    clearSelectedDates(reason = 'manual-clear') {
       this.selectedDate1 = ''
       this.selectedDate2 = ''
       this.isSelectingDate1 = true
       this.hoverDate = ''
+      this.emitSelectionChanged({ source: reason })
+      this.emitHoverRangeChanged({ source: reason })
     },
     handleClickOutside(event) {
       // if click was inside the trigger element, ignore (so trigger toggles work)
@@ -1257,7 +1170,7 @@ export default {
         this.triggerElement.contains(event.target)
       if (this.triggerElement && (event.target === this.triggerElement || triggerContainsTarget)) return
       if (this.selectedDate1 || this.selectedDate2) {
-        this.clearSelectedDates()
+        this.clearSelectedDates('outside-click')
       }
       this.closeDatepicker()
     },
@@ -1271,14 +1184,24 @@ export default {
       }
 
       // Exit range-select mode: reset hover and set to selecting start
+      let changed = false
       if (!this.isSelectingDate1) {
         this.isSelectingDate1 = true
+        changed = true
       }
-      this.hoverDate = ''
+      if (this.hoverDate) {
+        this.hoverDate = ''
+        changed = true
+      }
 
       // If a start date was selected but no end date yet, clear the tentative start selection
       if (this.selectedDate1 && !this.selectedDate2) {
         this.selectedDate1 = ''
+        changed = true
+      }
+      if (changed) {
+        this.emitSelectionChanged({ source: 'pointerdown-reset' })
+        this.emitHoverRangeChanged({ source: 'pointerdown-reset' })
       }
     },
     shouldHandleInput(event, key) {
@@ -1486,6 +1409,8 @@ export default {
       this.selectedDate1 = this.dateOne
       this.selectedDate2 = this.dateTwo
       this.focusedDate = startDate
+      this.emitSelectionChanged({ source: 'sync-props' })
+      this.emitHoverRangeChanged({ source: 'sync-props' })
     },
     setSundayToFirstDayInWeek() {
       const lastDay = this.days.pop()
@@ -1494,141 +1419,108 @@ export default {
       this.daysShort.unshift(lastDayShort)
     },
     getMonth(date) {
-      const firstDateOfMonth = format(date, 'YYYY-MM-01')
-      const year = format(date, 'YYYY')
-      const monthNumber = parseInt(format(date, 'M'))
-      const monthName = this.monthNames[monthNumber - 1]
-
-      return {
-        year,
-        firstDateOfMonth,
-        monthName,
-        monthNumber,
-        weeks: this.getWeeks(firstDateOfMonth),
-      }
+      return buildMonth({
+        date,
+        monthNames: this.monthNames,
+        sundayFirst: this.sundayFirst,
+        showOutsideDays: this.showOutsideDays,
+      })
     },
     getWeeks(date) {
-      const weekDayNotInMonth = { dayNumber: 0 }
-      const daysInMonth = getDaysInMonth(date)
-      const year = format(date, 'YYYY')
-      const month = format(date, 'MM')
-      const dateObj = new Date(date)
-      const prevMonthDate = subMonths(dateObj, 1)
-      const nextMonthDate = addMonths(dateObj, 1)
-      const prevYear = format(prevMonthDate, 'YYYY')
-      const prevMonth = format(prevMonthDate, 'MM')
-      const nextYear = format(nextMonthDate, 'YYYY')
-      const nextMonth = format(nextMonthDate, 'MM')
-      const prevMonthDays = getDaysInMonth(prevMonthDate)
-      let firstDayInWeek = parseInt(format(date, this.sundayFirst ? 'd' : 'E'))
-      if (this.sundayFirst) {
-        firstDayInWeek++
-      }
-      let weeks = []
-      let week = []
-
-      // add empty days to get first day in correct position
-      for (let s = 1; s < firstDayInWeek; s++) {
-        if (this.showOutsideDays) {
-          const dayNumber = prevMonthDays - (firstDayInWeek - 1 - s)
-          const dayNumberFull = dayNumber < 10 ? '0' + dayNumber : '' + dayNumber
-          week.push({
-            dayNumber,
-            dayNumberFull,
-            fullDate: prevYear + '-' + prevMonth + '-' + dayNumberFull,
-            outside: true,
-          })
-        } else {
-          week.push(weekDayNotInMonth)
-        }
-      }
-      for (let d = 0; d < daysInMonth; d++) {
-        let isLastDayInMonth = d >= daysInMonth - 1
-        let dayNumber = d + 1
-        let dayNumberFull = dayNumber < 10 ? '0' + dayNumber : dayNumber
-        week.push({
-          dayNumber,
-          dayNumberFull: dayNumberFull,
-          fullDate: year + '-' + month + '-' + dayNumberFull,
-          outside: false,
-        })
-
-        if (week.length === 7) {
-          weeks.push(week)
-          week = []
-        } else if (isLastDayInMonth) {
-          for (let i = 0; i < 7 - week.length; i++) {
-            if (this.showOutsideDays) {
-              const dayNumber = i + 1
-              const dayNumberFull = dayNumber < 10 ? '0' + dayNumber : '' + dayNumber
-              week.push({
-                dayNumber,
-                dayNumberFull,
-                fullDate: nextYear + '-' + nextMonth + '-' + dayNumberFull,
-                outside: true,
-              })
-            } else {
-              week.push(weekDayNotInMonth)
-            }
-          }
-          weeks.push(week)
-          week = []
-        }
-      }
-      return weeks
+      return buildWeeks({
+        date,
+        sundayFirst: this.sundayFirst,
+        showOutsideDays: this.showOutsideDays,
+      })
     },
     selectDate(date) {
-      if (!this.selectable || this.isBeforeMinDate(date) || this.isAfterEndDate(date) || this.isDateDisabled(date)) {
+      if (!this.selectable) {
+        this.$emit('blocked-date-clicked', {
+          mode: this.mode,
+          strategy: this.activeSelectionStrategy,
+          date,
+          reason: 'not-selectable',
+          minDate: this.minDate || null,
+          endDate: this.endDate || null,
+        })
         return
       }
+      if (this.isBeforeMinDate(date)) {
+        this.$emit('blocked-date-clicked', {
+          mode: this.mode,
+          strategy: this.activeSelectionStrategy,
+          date,
+          reason: 'before-min',
+          minDate: this.minDate || null,
+          endDate: this.endDate || null,
+        })
+        return
+      }
+      if (this.isAfterEndDate(date)) {
+        this.$emit('blocked-date-clicked', {
+          mode: this.mode,
+          strategy: this.activeSelectionStrategy,
+          date,
+          reason: 'after-end',
+          minDate: this.minDate || null,
+          endDate: this.endDate || null,
+        })
+        return
+      }
+      if (this.isDateDisabled(date)) {
+        this.$emit('blocked-date-clicked', {
+          mode: this.mode,
+          strategy: this.activeSelectionStrategy,
+          date,
+          reason: 'disabled',
+          minDate: this.minDate || null,
+          endDate: this.endDate || null,
+        })
+        return
+      }
+      const transition = resolveClickTransitionByStrategy({
+        strategyKey: this.activeSelectionStrategy,
+        date,
+        selectable: true,
+        isOutOfBounds: () => false,
+        isDateDisabled: () => false,
+        selectedDate1: this.selectedDate1,
+        selectedDate2: this.selectedDate2,
+        isSelectingDate1: this.isSelectingDate1,
+        defaultRangeConstrain: (start, end) => this.constrainRangeEndDateDefaultRange(start, end),
+        reservationAwareConstrain: (start, end) => this.constrainRangeEndDate(start, end),
+      })
+      if (!transition || transition.type === 'noop') return
 
-      if (this.mode === 'single') {
-        this.selectedDate1 = date
+      this.selectedDate1 = transition.next.selectedDate1
+      this.selectedDate2 = transition.next.selectedDate2
+      this.isSelectingDate1 = transition.next.isSelectingDate1
+      this.emitSelectionChanged({ source: 'date-click', action: transition.type, clickedDate: date })
+      this.emitHoverRangeChanged({ source: 'date-click' })
+
+      if (transition.shouldClose) {
         this.closeDatepicker()
         return
       }
 
-      // If a full range is already selected, clear it before allowing a new selection.
-      if (this.allDatesSelected && date !== this.selectedDate1 && date !== this.selectedDate2) {
-        this.clearSelectedDates()
-        return
-      }
-
-      // First click: selecting start
-      if (this.isSelectingDate1) {
-        this.selectedDate1 = date
-        this.selectedDate2 = ''
-        this.isSelectingDate1 = false
-        return
-      }
-
-      // Second click: selecting end (supports backwards selection and same-day)
-      const start = this.selectedDate1
-      const endCandidate = this.constrainRangeEndDate(start, date)
-      if (isBefore(endCandidate, start)) {
-        // backwards: swap
-        this.selectedDate1 = endCandidate
-        this.selectedDate2 = start
-      } else {
-        // forward or same-day
-        this.selectedDate2 = endCandidate
-      }
-      this.isSelectingDate1 = true
-
-      if (this.showActionButtons) {
+      if (transition.shouldFinalizeRange && this.showActionButtons) {
         const applyBtn = this.$refs && this.$refs['apply-button']
         this.focusWithoutScroll(applyBtn)
       }
-      if (this.allDatesSelected && this.closeAfterSelect) {
+      if (transition.shouldFinalizeRange && this.allDatesSelected && this.closeAfterSelect) {
         this.closeDatepicker()
       }
     },
     setHoverDate(date) {
-      if (!this.isSelectingDate1 && this.selectedDate1 && date) {
-        this.hoverDate = this.constrainRangeEndDate(this.selectedDate1, date)
-      } else {
-        this.hoverDate = date
-      }
+      this.hoverDate = resolveHoverDateByStrategy({
+        strategyKey: this.activeSelectionStrategy,
+        date,
+        isSelectingDate1: this.isSelectingDate1,
+        selectedDate1: this.selectedDate1,
+        defaultRangeConstrain: (start, end) => this.constrainRangeEndDateDefaultRange(start, end),
+        reservationAwareConstrain: (start, end) => this.constrainRangeEndDate(start, end),
+      })
+      this.emitHoverRangeChanged({ source: 'hover' })
       const rr = this.reservationFor(date)
       this.hoveredReservationIdx = rr ? rr.idx : null
       // Emit hovered reservation info so parent apps can react (e.g., highlight a booking row)
@@ -1674,31 +1566,25 @@ export default {
       return this.selectedDate1 === date || this.selectedDate2 === date
     },
     isInRange(date) {
-      if (!this.allDatesSelected || this.isSingleMode) {
-        return false
-      }
-
-      return (
-        (isAfter(date, this.selectedDate1) && isBefore(date, this.selectedDate2)) ||
-        (isAfter(date, this.selectedDate1) &&
-          isBefore(date, this.hoverDate) &&
-          !this.allDatesSelected)
-      )
+      return isInRangeUtil({
+        date,
+        selectedDate1: this.selectedDate1,
+        selectedDate2: this.selectedDate2,
+        hoverDate: this.hoverDate,
+        allDatesSelected: this.allDatesSelected,
+        isSingleMode: this.isSingleMode,
+      })
     },
     isHoveredInRange(date) {
-      if (this.isSingleMode || this.allDatesSelected || this.isSelectingDate1) {
-        return false
-      }
-
-      // Include the currently hovered date itself so it receives the hovered styling
-      if (this.hoverDate && this.isSameDate(date, this.hoverDate)) {
-        return true
-      }
-
-      return (
-        (isAfter(date, this.selectedDate1) && isBefore(date, this.hoverDate)) ||
-        (isAfter(date, this.hoverDate) && isBefore(date, this.selectedDate1))
-      )
+      return isHoveredInRangeUtil({
+        date,
+        selectedDate1: this.selectedDate1,
+        hoverDate: this.hoverDate,
+        allDatesSelected: this.allDatesSelected,
+        isSelectingDate1: this.isSelectingDate1,
+        isSingleMode: this.isSingleMode,
+        isSameDate: this.isSameDate,
+      })
     },
     isBeforeMinDate(date) {
       if (!this.minDate) {
@@ -1730,14 +1616,8 @@ export default {
     },
     isDateDisabled(date) {
       // 1) Reservation defaults: disable interior dates, keep start/end selectable.
-      if (Array.isArray(this.reservations) && this.reservations.length && date) {
-        for (let i = 0; i < this.reservations.length; i++) {
-          const r = this.reservations[i]
-          if (!r || !r.start || !r.end) continue
-          if (this.isReservationInteriorDate(date, r)) {
-            return true
-          }
-        }
+      if (isDateDisabledByReservationInterior(date, this.reservations)) {
+        return true
       }
 
       // 2) Respect explicit enabledDates/disabledDates lists
@@ -1828,6 +1708,8 @@ export default {
       if (this.showDatepicker) {
         this.selectedDate1 = this.initialDate1
         this.selectedDate2 = this.initialDate2
+        this.emitSelectionChanged({ source: 'cancel' })
+        this.emitHoverRangeChanged({ source: 'cancel' })
         this.$emit('cancelled')
         this.closeDatepicker()
       }

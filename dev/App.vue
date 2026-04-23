@@ -192,14 +192,24 @@
           <label><input type="checkbox" v-model="showReservationsDemo" /> Show reservations</label>
           <label><input type="checkbox" v-model="reservationsReadOnly" /> Read-only (disable date selection)</label>
           <label><input type="checkbox" v-model="showFancyBadges" /> Fancy badges (avatars)</label>
+          <label>
+            Selection strategy:
+            <select v-model="demoSelectionStrategy" style="margin-left:6px;">
+              <option value="reservation-aware-range">reservation-aware-range (default)</option>
+              <option value="range">range</option>
+              <option value="single">single</option>
+            </select>
+          </label>
         </div>
         <airbnb-style-datepicker v-bind="demoPickerProps" :months-to-show="2" :date-one="inlineDateOne"
+          :selection-strategy="demoSelectionStrategy"
           :selectable="!reservationsReadOnly" :reservation-badge-visible="reservationBadgeVisible" :theme="demoTheme"
           :month-names-override="currentLocale.monthNames" :days-override="currentLocale.days"
           :days-short-override="currentLocale.daysShort" :reservations="showReservationsDemo ? demoReservations : []"
           :disabled-dates="showReservationsDemo ? demoBlockedDates : []"
           @date-one-selected="val => { inlineDateOne = val }" @reservation-hovered="onReservationHovered"
-          @reservation-clicked="onReservationClicked">
+          @reservation-clicked="onReservationClicked" @selection-changed="onSelectionChanged"
+          @hover-range-changed="onHoverRangeChanged" @blocked-date-clicked="onBlockedDateClicked">
           <template v-slot:reservation-floating="{ reservation }">
             <span :style="{
               background: reservation.badgeColor || reservation.color,
@@ -224,6 +234,16 @@
         </airbnb-style-datepicker>
         <div v-if="lastReservationClickedMsg" style="margin-top:8px; color:#333;">
           <strong>Last reservation clicked:</strong> {{ lastReservationClickedMsg }}
+        </div>
+        <div v-if="lastSelectionChangedMsg" style="margin-top:6px; color:#333;">
+          <strong>selection-changed:</strong> {{ lastSelectionChangedMsg }}
+        </div>
+        <div v-if="lastBlockedDateMsg" style="margin-top:6px; color:#333;">
+          <strong>blocked-date-clicked:</strong> {{ lastBlockedDateMsg }}
+        </div>
+        <div style="margin-top:6px; color:#666; font-size:12px;">
+          Preferred events: <code>selection-changed</code> and <code>hover-range-changed</code>. Legacy
+          <code>date-one-selected</code>/<code>date-two-selected</code> are still emitted for backwards compatibility.
         </div>
         <div v-if="showReservationsDemo" style="margin-top:12px;">
           <h4>Bookings</h4>
@@ -322,8 +342,11 @@ export default {
       ],
       hoveredBookingId: null,
       lastReservationClickedMsg: '',
+      lastSelectionChangedMsg: '',
+      lastBlockedDateMsg: '',
       reservationsReadOnly: false,
       showFancyBadges: true,
+      demoSelectionStrategy: 'reservation-aware-range',
     }
   },
   computed: {
@@ -438,6 +461,39 @@ export default {
         console.log('reservation-clicked')
         this.eventLog.unshift('reservation-clicked')
         this.lastReservationClickedMsg = 'Clicked'
+      }
+    },
+    onSelectionChanged(payload) {
+      try {
+        const start = payload && payload.startDate ? payload.startDate : '-'
+        const end = payload && payload.endDate ? payload.endDate : '-'
+        const strategy = payload && payload.strategy ? payload.strategy : this.demoSelectionStrategy
+        const source = payload && payload.source ? payload.source : 'unknown'
+        const msg = `${start} -> ${end} (${strategy}, ${source})`
+        this.lastSelectionChangedMsg = msg
+        this.eventLog.unshift(`selection-changed: ${msg}`)
+      } catch (e) {
+        this.lastSelectionChangedMsg = 'selection changed'
+      }
+    },
+    onHoverRangeChanged(payload) {
+      try {
+        const hover = payload && payload.hoverDate ? payload.hoverDate : '-'
+        const preview = payload && payload.isPreviewingRange ? `${payload.previewStartDate} -> ${payload.previewEndDate}` : 'none'
+        this.eventLog.unshift(`hover-range-changed: hover=${hover}, preview=${preview}`)
+      } catch (e) {
+        this.eventLog.unshift('hover-range-changed')
+      }
+    },
+    onBlockedDateClicked(payload) {
+      try {
+        const date = payload && payload.date ? payload.date : '?'
+        const reason = payload && payload.reason ? payload.reason : 'blocked'
+        const msg = `${date} (${reason})`
+        this.lastBlockedDateMsg = msg
+        this.eventLog.unshift(`blocked-date-clicked: ${msg}`)
+      } catch (e) {
+        this.lastBlockedDateMsg = 'blocked date'
       }
     },
     priceFor(day) {

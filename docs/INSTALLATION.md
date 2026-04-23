@@ -177,6 +177,7 @@ Vue.use(AirBnbStyleDatepicker, {
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | triggerElementId         | The id of the element that user clicks on (without #).<br>Type: String, Required                                                                                                                                                 |
 | mode                     | If datepicker should select a range or just a single date.<br>Type: String, Required, Values: `'single'` or `'range'`, Default: `'range'`                                                                                        |
+| selectionStrategy        | Selection behavior strategy.<br>Values: `'single' | 'range' | 'reservation-aware-range'`.<br>Default: inferred from mode (`'single'` for `mode='single'`, `'reservation-aware-range'` for `mode='range'`) |
 | dateOne                  | Model for first date.<br>Type: String, Required                                                                                                                                                                                  |
 | dateTwo                  | Model for second date.<br>Type: String, Required if using `mode="range"`                                                                                                                                                         |
 | minDate                  | Disable dates before this.<br>Type: String                                                                                                                                                                                       |
@@ -204,8 +205,11 @@ Vue.use(AirBnbStyleDatepicker, {
 | reservationBadgeMinCellsForRowCenter | When `reservationBadgeCenterMode='row'`, prefer a row segment with at least this many visible days.<br>Type: Number, Default: `2` |
 | reservationBadgeYOffset   | Push the floating reservation badge down by N pixels so the day number remains visible.<br>Type: Number, Default: `7` |
 | reservationBadgeShadow    | CSS filter applied to the floating badge container. Example: `drop-shadow(0 2px 3px rgba(0,0,0,0.18))`.<br>Type: String, Default: `drop-shadow(0 2px 3px rgba(0,0,0,0.18))` |
-| @date-one-selected       | Event emitted when second date is selected.<br>Required                                                                                                                                                                          |
+| @date-one-selected       | Legacy event emitted when first date changes.<br>Kept for backward compatibility                                                                                                                                                 |
 | @date-two-selected       | Event emitted when second date is selected.<br>Required if using `mode="range"`                                                                                                                                                  |
+| @selection-changed       | Preferred unified selection event. Payload: `{ mode, strategy, startDate, endDate, isSelectingStart, hasSelection, hasCompleteRange, source?, action?, clickedDate? }`                                                       |
+| @hover-range-changed     | Preferred unified hover preview event. Payload: `{ mode, strategy, hoverDate, startDate, endDate, isPreviewingRange, previewStartDate, previewEndDate, source? }`                                                            |
+| @blocked-date-clicked    | Emitted when a clicked date cannot be selected. Payload: `{ mode, strategy, date, reason, minDate, endDate }`, where reason is `not-selectable | before-min | after-end | disabled`                                        |
 | @opened                  | Event emitted when datepicker is opened.                                                                                                                                                                                         |
 | @closed                  | Event emitted when datepicker is closed.                                                                                                                                                                                         |
 | @cancelled               | Event emitted when user clicks "Cancel".                                                                                                                                                                                         |
@@ -219,12 +223,17 @@ Vue.use(AirBnbStyleDatepicker, {
 | close-shortcuts-icon     | Optional, slot used to override the modal close X icon in the keyboard shortcuts menu. Uses default icon if nothing is passed.                                                                                                   |
 | reservation-floating     | Optional, slot rendered once per reservation (not per day). Lets you provide a custom badge component (e.g., Quasar `QBadge` + `QAvatar`). Slot props: `{ reservation }` with fields `{ id, label, color, start, end, variant, isStart, isEnd }`. |
 
+Deprecation guidance:
+- `@date-one-selected` and `@date-two-selected` are still emitted for backward compatibility.
+- For new integrations, prefer `@selection-changed` and `@hover-range-changed`.
+
 <br><br> _Example with all properties (not recommended, only to show values)_:
 
 ```html
 <AirbnbStyleDatepicker
   :trigger-element-id="'datepicker-trigger'"
   :mode="'range'"
+  :selection-strategy="'reservation-aware-range'"
   :date-one="dateOne"
   :date-two="dateTwo"
   :min-date="'2018-10-12'"
@@ -247,6 +256,9 @@ Vue.use(AirBnbStyleDatepicker, {
   :close-after-select="true"
   @date-one-selected="val => { dateOne = val }"
   @date-two-selected="val => { dateTwo = val }"
+  @selection-changed="onSelectionChanged"
+  @hover-range-changed="onHoverRangeChanged"
+  @blocked-date-clicked="onBlockedDateClicked"
   @opened="onOpenedMethod"
   @closed="onClosedMethod"
   @cancelled="onCancelMethod"
@@ -264,6 +276,7 @@ Add an array of reservations to quickly visualize booked ranges. The component h
 <AirbnbStyleDatepicker
   :inline="true"
   :months-to-show="2"
+  :selection-strategy="'reservation-aware-range'"
   :reservations="[
     { id: 101, start: '2026-04-02', end: '2026-04-05', label: 'A1' },
     { id: 102, start: '2026-04-05', end: '2026-04-08', label: 'A2' },

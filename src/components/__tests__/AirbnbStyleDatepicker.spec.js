@@ -249,6 +249,132 @@ describe('AirbnbStyleDatepicker', () => {
       expect(wrapper.emitted()['date-one-selected'][dateOneEmitsBefore]).toEqual([dateOne])
       expect(wrapper.emitted()['date-two-selected'][dateTwoEmitsBefore]).toEqual([dateTwo])
     })
+    test('selection-changed emits unified payload on date click', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+      })
+      const before = (wrapper.emitted()['selection-changed'] || []).length
+      wrapper.vm.selectDate('2018-01-10')
+      await wrapper.vm.$nextTick()
+      const payload = wrapper.emitted()['selection-changed'][before][0]
+      expect(payload).toMatchObject({
+        mode: 'range',
+        strategy: 'reservation-aware-range',
+        startDate: '2018-01-10',
+        endDate: null,
+        isSelectingStart: false,
+        source: 'date-click',
+      })
+    })
+    test('blocked-date-clicked emits reason for disabled day', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+        disabledDates: ['2018-01-11'],
+      })
+      wrapper.vm.selectDate('2018-01-11')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.emitted()['blocked-date-clicked'][0][0]).toMatchObject({
+        date: '2018-01-11',
+        reason: 'disabled',
+        mode: 'range',
+      })
+    })
+    test('hover-range-changed emits preview payload while selecting end date', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        dateOne: '',
+        dateTwo: '',
+      })
+      wrapper.vm.selectDate('2018-01-10')
+      await wrapper.vm.$nextTick()
+      const before = (wrapper.emitted()['hover-range-changed'] || []).length
+      wrapper.vm.setHoverDate('2018-01-14')
+      await wrapper.vm.$nextTick()
+      const payload = wrapper.emitted()['hover-range-changed'][before][0]
+      expect(payload).toMatchObject({
+        mode: 'range',
+        isPreviewingRange: true,
+        startDate: '2018-01-10',
+        hoverDate: '2018-01-14',
+        previewStartDate: '2018-01-10',
+        previewEndDate: '2018-01-14',
+      })
+    })
+    test('reservation-aware-range strategy clamps end selection to next reservation boundary', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        selectionStrategy: 'reservation-aware-range',
+        dateOne: '',
+        dateTwo: '',
+        reservations: [{ id: 1, start: '2018-01-05', end: '2018-01-05', label: 'Boundary' }],
+      })
+      wrapper.vm.selectDate('2018-01-02')
+      await wrapper.vm.$nextTick()
+      wrapper.vm.selectDate('2018-01-10')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.selectedDate1).toEqual('2018-01-02')
+      expect(wrapper.vm.selectedDate2).toEqual('2018-01-05')
+    })
+    test('range strategy does not clamp to reservation boundary when no interior is blocked', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        selectionStrategy: 'range',
+        dateOne: '',
+        dateTwo: '',
+        reservations: [{ id: 1, start: '2018-01-05', end: '2018-01-05', label: 'Boundary' }],
+      })
+      wrapper.vm.selectDate('2018-01-02')
+      await wrapper.vm.$nextTick()
+      wrapper.vm.selectDate('2018-01-10')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.selectedDate1).toEqual('2018-01-02')
+      expect(wrapper.vm.selectedDate2).toEqual('2018-01-10')
+    })
+    test('single strategy in range mode behaves like single-date selection', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        selectionStrategy: 'single',
+        dateOne: '',
+        dateTwo: '',
+      })
+      wrapper.setData({ showDatepicker: true, triggerElement: document.createElement('div') })
+      await wrapper.vm.$nextTick()
+      wrapper.vm.selectDate('2018-01-12')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.selectedDate1).toEqual('2018-01-12')
+      expect(wrapper.vm.selectedDate2).toEqual('')
+      expect(wrapper.vm.isSelectingDate1).toEqual(true)
+      expect(wrapper.vm.showDatepicker).toEqual(false)
+    })
+    test('hover preview follows selected strategy constrain behavior', async () => {
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        selectionStrategy: 'reservation-aware-range',
+        dateOne: '',
+        dateTwo: '',
+        reservations: [{ id: 1, start: '2018-01-05', end: '2018-01-05', label: 'Boundary' }],
+      })
+      await wrapper.setData({ selectedDate1: '2018-01-02', isSelectingDate1: false })
+      wrapper.vm.setHoverDate('2018-01-10')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.hoverDate).toEqual('2018-01-05')
+
+      wrapper = createDatePickerInstance({
+        mode: 'range',
+        selectionStrategy: 'range',
+        dateOne: '',
+        dateTwo: '',
+        reservations: [{ id: 1, start: '2018-01-05', end: '2018-01-05', label: 'Boundary' }],
+      })
+      await wrapper.setData({ selectedDate1: '2018-01-02', isSelectingDate1: false })
+      wrapper.vm.setHoverDate('2018-01-10')
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.hoverDate).toEqual('2018-01-10')
+    })
     test('month of minDate is shown first', () => {
       wrapper = createDatePickerInstance({
         minDate: format(addMonths(new Date(), 2), 'YYYY-MM-DD'),
